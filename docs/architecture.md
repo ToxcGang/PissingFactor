@@ -1,0 +1,52 @@
+# Architecture
+
+The portable Lua core owns gameplay decisions. A game compatibility adapter
+reads player state and calls the verified continence update function. Unreal
+Blueprint assets provide networked actors and presentation resources. No chat
+messages, item-use RPCs, or external network service carry mod traffic.
+
+## Authority
+
+The host creates one replicated PissingFactor actor per player, owned by that
+player's controller. Its server RPC accepts the owning player's version,
+protocol, monotonic input sequence, held state, and aim vector. Receipt time is
+measured by the server. The server never accepts client-supplied relief, hit
+positions, affected player identity, or effect expiration times.
+
+Reliable start/stop transitions and bounded aim updates feed `pf.session`.
+The session rejects incompatible versions, stale sequences, non-finite input,
+and invalid player states. A one-second timeout cancels input. Emptying or any
+interruption latches the action until a release; it cannot restart when the
+continence meter subsequently decays while the button is still held.
+
+Simulation runs at 10 Hz, caps each relief step at 0.1 seconds, and checks
+eligibility every step. The game continues to own its normal needs system.
+Respawns and world transitions discard old sessions.
+
+## Collision and presentation
+
+The server traces successive segments of a gravity-driven arc from the
+character's waist. The first water or solid hit wins. Solid impacts attach
+decals in the hit component's local coordinates where possible. Water produces
+short-lived clouds and ripples instead of stains on the floor beneath it.
+
+Replicated action/impact state carries server time and expiration, so late
+joiners see only the remaining lifetime. Each client creates cosmetic visuals
+locally; the dedicated server performs no rendering or audio work. Limit
+new impact stamps to five per player per second and retain at most 256 records
+per world, evicting the oldest first. Effects never enter game saves.
+
+## Input
+
+The controller shortcut requires the bumper first. The input layer must consume
+the ordinary gameplay bindings before they run. Polling key state alone cannot
+prevent item drops. A solo bumper action is deferred until release, then replayed
+once only if no chord occurred. Menus retain native navigation. Opening a menu
+or losing focus cancels any queued action and requires releasing held inputs.
+
+## Compatibility boundary
+
+`tools/probe.lua` is an opt-in diagnostic mod. It generates local reflection
+metadata without changing player stats. Reflection presence proves a binding
+exists; it does not prove its gameplay semantics or replication. Those require
+the acceptance tests in `validation.md`.

@@ -1,0 +1,53 @@
+name: Bug report
+description: Report a reproducible PissingFactor problem.
+title: "[Bug]: "
+body:
+  - type: input
+    id: mod_version
+    attributes:
+      label: PissingFactor version or commit
+      placeholder: 1.0.0 or a development commit SHA
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Game and UE4SS versions
+      description: Include the Abiotic Factor version and both the UE4SS bundle and runtime versions.
+    validations:
+      required: true
+  - type: dropdown
+    id: role
+    attributes:
+      label: Session role
+      options:
+        - Single-player
+        - Hosted co-op host
+        - Multiplayer client
+        - Windows dedicated server
+    validations:
+      required: true
+  - type: input
+    id: input
+    attributes:
+      label: Input device and bindings
+      description: Keyboard, controller model, Steam Input use, and any rebound controls.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Explain the location, actions taken, expected result, and actual result.
+    validations:
+      required: true
+  - type: textarea
+    id: mods
+    attributes:
+      label: Other mods and multiplayer installation
+      description: List other mods and confirm which players and server installed PissingFactor.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs or video
+      description: Paste a relevant UE4SS.log excerpt or attach evidence. Remove personal information and credentials.

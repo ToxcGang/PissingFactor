@@ -1,0 +1,16 @@
+{
+  "game": {
+    "name": "Abiotic Factor",
+    "platform": "Windows Steam",
+    "version": "1.4.0.28206",
+    "steamAppId": 427410,
+    "steamBuildId": 24343447
+  },
+  "unreal": { "version": "5.4.4" },
+  "ue4ss": {
+    "bundleVersion": "1.22.0",
+    "runtimeVersion": "3.0.1-1012-gc838a8ac",
+    "url": "https://github.com/igromanru/AF-UE4SS/releases/download/1.22.0/UE4SS_v3.0.1-1012-gc838a8ac_Abiotic-Factor.zip",
+    "sha256": "51898e42324a30286062e7617e7dd92e3ec555d3f62545f76984646d5a9c6a33"
+  }
+}

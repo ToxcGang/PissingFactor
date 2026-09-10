@@ -1,0 +1,27 @@
+name: Feature request
+description: Suggest a change to PissingFactor.
+title: "[Feature]: "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What would this improve?
+      description: Describe the player need or problem.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe controls, visuals, and gameplay behavior as applicable.
+    validations:
+      required: true
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Controller and multiplayer considerations
+      description: Explain how the feature should behave for controllers, other players, and dedicated servers.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives or references
