@@ -15,6 +15,7 @@ GATES = (
 )
 PREFIX = "AbioticFactor/"
 PAK_PATH = PREFIX + "Content/Paks/LogicMods/PissingFactor.pak"
+COOKED_PATHS = {str(PurePosixPath(PAK_PATH).with_suffix(s)) for s in (".pak", ".utoc", ".ucas")}
 LUA_PREFIX = PREFIX + "Binaries/Win64/ue4ss/Mods/PissingFactor/"
 
 
@@ -32,11 +33,12 @@ def require(condition, message):
         raise ValueError(message)
 
 
-def validate_acceptance(data, commit, pak_hash):
+def validate_acceptance(data, commit, pak_hash, cooked_files):
     require(data.get("version") == "1.0.0", "Evidence mod version does not match")
     require(data.get("protocol") == 1, "Evidence protocol does not match")
     require(data.get("sourceCommit") == commit, "Acceptance must cover this exact source commit")
     require(data.get("pakSha256") == pak_hash, "Acceptance must cover this exact cooked pack")
+    require(data.get("cookedFiles") == cooked_files, "Acceptance must cover all cooked containers")
     require(data.get("dependencies") == read_json(ROOT / "dependencies.lock.json"),
             "Acceptance dependencies do not match the lock file")
     checks = data.get("checks", {})
@@ -57,13 +59,13 @@ def validate_zip(path):
             p = PurePosixPath(name)
             require(not p.is_absolute() and ".." not in p.parts and "\\" not in name
                     and ":" not in name, f"Unsafe ZIP path: {name}")
-            require(name in {PAK_PATH, "README.md", "LICENSE", "CHANGELOG.md",
+            require(name in COOKED_PATHS | {"README.md", "LICENSE", "CHANGELOG.md",
                              "dependencies.lock.json", "package-manifest.json"}
                     or name.startswith(LUA_PREFIX) or name.startswith("docs/"),
                     f"Unexpected packaged file: {name}")
             require(not name.lower().endswith((".dll", ".exe", ".hpp", ".uproject")),
                     f"Dependency or game/editor content in package: {name}")
-        required = {PAK_PATH, LUA_PREFIX + "scripts/main.lua", LUA_PREFIX + "enabled.txt",
+        required = COOKED_PATHS | {LUA_PREFIX + "scripts/main.lua", LUA_PREFIX + "enabled.txt",
                     LUA_PREFIX + "config.lua", "LICENSE", "README.md", "dependencies.lock.json"}
         require(required <= set(names), "ZIP is missing required installation files")
         manifest = json.loads(z.read("package-manifest.json"))

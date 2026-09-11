@@ -17,12 +17,15 @@ def package(pak, output, acceptance=None):
     require(build["sourceCommit"] == commit, "Cook is stale; rebuild this source commit")
     require(build["pakSha256"] == sha256(pak), "Cooked pack hash differs from build record")
     require(build["engine"] == "5.4.4", "Wrong cooking engine")
+    cooked_files = {pak.with_suffix(s).name: sha256(pak.with_suffix(s)) for s in (".pak", ".utoc", ".ucas")}
+    require(build.get("cookedFiles") == cooked_files, "Cooked container hashes differ from build record")
     if acceptance:
         require(build.get("kind") == "complete", "A transport prototype cannot be released")
         required = set(read_json(ROOT / "assets/manifest.json")["requiredCookedAssets"])
         require(required <= set(build.get("cookedAssets", [])), "Build is missing required assets")
-        validate_acceptance(read_json(acceptance), commit, sha256(pak))
-    files = {PAK_PATH: pak.read_bytes()}
+        validate_acceptance(read_json(acceptance), commit, sha256(pak), cooked_files)
+    files = {str(Path(PAK_PATH).with_suffix(s)).replace("\\", "/"): pak.with_suffix(s).read_bytes()
+             for s in (".pak", ".utoc", ".ucas")}
     runtime = ROOT / "runtime/PissingFactor"
     for path in runtime.rglob("*"):
         if path.is_file() and path.name != "user_settings.json":

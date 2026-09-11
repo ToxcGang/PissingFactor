@@ -3,6 +3,7 @@
   "protocol": 1,
   "sourceCommit": null,
   "pakSha256": null,
+  "cookedFiles": null,
   "dependencies": null,
   "checks": {
     "singleplayer": {"status": "pending"},

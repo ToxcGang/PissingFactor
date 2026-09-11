@@ -11,7 +11,11 @@ local zero = {X=0,Y=0,Z=0}
 local rotation = {Pitch=0,Yaw=0,Roll=0}
 
 local function asset(name)
-    local object = LoadAsset(root .. name .. "." .. name .. "_C")
+    -- Use the same reflected loader as AF's BPModLoaderMod. LoadAsset does
+    -- not provide a dependable returned UClass in the pinned UE4SS build.
+    local registry = StaticFindObject("/Script/AssetRegistry.Default__AssetRegistryHelpers")
+    assert(Game.valid(registry), "AssetRegistryHelpers unavailable")
+    local object = registry:GetAsset({PackageName=FName(root .. name),AssetName=FName(name .. "_C")})
     assert(Game.valid(object), "Missing cooked " .. name .. "; install the matching PissingFactor.pak")
     return object
 end

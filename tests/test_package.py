@@ -7,19 +7,22 @@ import unittest
 import zipfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
-from verify import GATES, LUA_PREFIX, PAK_PATH, ROOT, read_json, validate_acceptance, validate_zip
+from verify import COOKED_PATHS, GATES, LUA_PREFIX, PAK_PATH, ROOT, read_json, validate_acceptance, validate_zip
+
+
+CONTAINERS = {"PissingFactor" + s: "d" * 64 for s in (".pak", ".utoc", ".ucas")}
 
 
 class ReleaseGateTests(unittest.TestCase):
     def evidence(self):
         return {"version": "1.0.0", "protocol": 1, "sourceCommit": "a" * 40,
-                "pakSha256": "b" * 64, "dependencies": read_json(ROOT / "dependencies.lock.json"),
+                "pakSha256": "b" * 64, "cookedFiles": CONTAINERS, "dependencies": read_json(ROOT / "dependencies.lock.json"),
                 "checks": {gate: {"status": "passed", "tester": "Test fixture",
                                   "date": "2026-09-10", "evidence": "Synthetic validator fixture only"}
                            for gate in GATES}}
 
     def test_complete_evidence_is_accepted(self):
-        validate_acceptance(self.evidence(), "a" * 40, "b" * 64)
+        validate_acceptance(self.evidence(), "a" * 40, "b" * 64, CONTAINERS)
 
     def test_every_gate_is_required(self):
         for gate in GATES:
@@ -27,31 +30,39 @@ class ReleaseGateTests(unittest.TestCase):
                 data = self.evidence()
                 data["checks"][gate]["status"] = "pending"
                 with self.assertRaisesRegex(ValueError, gate):
-                    validate_acceptance(data, "a" * 40, "b" * 64)
+                    validate_acceptance(data, "a" * 40, "b" * 64, CONTAINERS)
 
     def test_stale_commit_or_different_binary_is_rejected(self):
         for commit, digest in [("c" * 40, "b" * 64), ("a" * 40, "c" * 64)]:
             with self.assertRaises(ValueError):
-                validate_acceptance(self.evidence(), commit, digest)
+                validate_acceptance(self.evidence(), commit, digest, CONTAINERS)
+
+    def test_changed_iostore_container_is_rejected(self):
+        changed = dict(CONTAINERS, **{"PissingFactor.ucas": "e" * 64})
+        with self.assertRaisesRegex(ValueError, "all cooked containers"):
+            validate_acceptance(self.evidence(), "a" * 40, "b" * 64, changed)
 
     def test_unfilled_template_is_not_approval(self):
         with self.assertRaises(ValueError):
-            validate_acceptance(read_json(ROOT / "validation/results.json"), "a" * 40, "b" * 64)
+            validate_acceptance(read_json(ROOT / "validation/results.json"), "a" * 40, "b" * 64, CONTAINERS)
 
     def test_missing_tester_is_rejected(self):
         data = self.evidence()
         data["checks"]["controller"]["tester"] = ""
         with self.assertRaisesRegex(ValueError, "tester"):
-            validate_acceptance(data, "a" * 40, "b" * 64)
+            validate_acceptance(data, "a" * 40, "b" * 64, CONTAINERS)
 
 
 class ZipTests(unittest.TestCase):
-    def write_zip(self, path, extra=None, corrupt=False):
+    def write_zip(self, path, extra=None, corrupt=False, omit=None):
         files = {PAK_PATH: b"synthetic fixture, never install",
                  LUA_PREFIX + "scripts/main.lua": b"return {}",
                  LUA_PREFIX + "enabled.txt": b"", LUA_PREFIX + "config.lua": b"return {}",
                  "README.md": b"fixture", "LICENSE": b"fixture", "dependencies.lock.json": b"{}"}
+        files.update({name: b"synthetic container fixture" for name in COOKED_PATHS})
         files.update(extra or {})
+        if omit:
+            files.pop(omit)
         manifest = {"version": "1.0.0", "files": {
             name: hashlib.sha256(data).hexdigest() for name, data in files.items()}}
         if corrupt:
@@ -66,6 +77,14 @@ class ZipTests(unittest.TestCase):
             path = Path(directory) / "test.zip"
             self.write_zip(path)
             validate_zip(path)
+
+    def test_missing_companion_container_is_rejected(self):
+        for name in COOKED_PATHS:
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
+                path = Path(directory) / "test.zip"
+                self.write_zip(path, omit=name)
+                with self.assertRaisesRegex(ValueError, "missing required"):
+                    validate_zip(path)
 
     def test_private_content_and_path_traversal_are_rejected(self):
         for name in ["../escaped.lua", "C:/file", "docs/../../file", "docs\\file",

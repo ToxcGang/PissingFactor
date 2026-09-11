@@ -17,7 +17,12 @@ Missing checks are **unverified**, not passed.
   modular body/head mesh. The body uses `hips`; game reference transforms stay local.
 - `IsAnyMenuOpen` successfully updates the Lua out-parameter table in the main menu.
 - Unreal Editor 5.4.4 (CL 35576357) compiled the editor plugin with MSVC 14.38.33145
-  and generated the first editable actors/materials. This is not a cooked-game test.
+  and generated the first editable actors/materials.
+- On 2026-09-11, the eight original assets cooked successfully. UnrealPak's IoStore
+  inventory contains only those assets and a container header. The game mounted
+  all three containers, spawned `ModActor`, loaded the prototype classes and
+  registered both RPC hooks and all ten input-event hooks in the main menu.
+  This proves loading only; it does not establish possessed-player or remote-client behavior.
 
 ## Required gameplay scenarios
 

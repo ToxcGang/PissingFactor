@@ -24,8 +24,9 @@ the entire `Mods` folder or `mods.txt` with PissingFactor's files.
 
 ## Mod files
 
-Extract the verified mod ZIP into the inner `AbioticFactor` directory, the one
-containing `Binaries` and `Content`. The resulting layout is:
+Extract the verified mod ZIP into Steam's game installation directory
+(`steamapps/common/AbioticFactor`), which contains the inner `AbioticFactor`
+directory. Inside that inner directory, the resulting layout is:
 
 ```text
 Binaries/Win64/ue4ss/Mods/PissingFactor/
@@ -35,10 +36,13 @@ Binaries/Win64/ue4ss/Mods/PissingFactor/
   scripts/pf/...
 Content/Paks/LogicMods/
   PissingFactor.pak
+  PissingFactor.utoc
+  PissingFactor.ucas
 ```
 
-Keep any accompanying `.utoc`/`.ucas` files together with the `.pak` if the
-selected cook produces them. The package verifier records the exact file set.
+All three cooked files are required. A `.pak` alone mounts but does not load
+the Blueprint actors in the target game's IoStore loader. The package verifier
+checks the presence and hashes of all three files.
 
 The server and every client need the same complete package. A dedicated server
 uses the corresponding folders beside its own executable/content directory.

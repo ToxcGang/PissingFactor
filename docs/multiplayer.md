@@ -1,6 +1,6 @@
 # Multiplayer testing
 
-Use a disposable world and matching source commit, cooked-pack SHA-256, mod
+Use a disposable world and matching source commit, all three cooked-file hashes, mod
 version, protocol, game version and UE4SS bundle on every machine. Install the
 Lua mod and cooked pack on the host/dedicated server as well as each client.
 Record exact builds in an acceptance file described in [building](building.md).
@@ -16,6 +16,7 @@ The source default remains false. A prototype build cannot be released as 1.0.0.
 F6 writes a compact, read-only session snapshot to `UE4SS.log` while the prototype
 is enabled. Set `Debug = true` to log each authoritative continence change.
 Disable the separate `PissingFactorProbe` mod first to avoid sharing its F6 key.
+Install `PissingFactor.pak`, `PissingFactor.utoc` and `PissingFactor.ucas` together.
 
 1. Start a host and a remote client, then possess a normal living character on
    each. Confirm both logs report the prototype ready with the expected versions.

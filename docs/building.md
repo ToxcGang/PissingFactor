@@ -1,9 +1,9 @@
 # Building and development
 
 The Lua core can be tested without the game or Unreal Editor. The cooked mod
-cannot. There is currently no complete asset cook or playable package. The
-editor generator compiles against 5.4.4 and produces the initial network/input
-actors and materials. Full presentation and gameplay acceptance remain pending.
+cannot. The transport prototype cooks with 5.4.4 and produces the initial
+network/input actors and materials. Full presentation and gameplay acceptance
+remain pending.
 
 ## Portable checks
 
@@ -36,6 +36,10 @@ documentation links, and packaging rules. They do not simulate Unreal RPCs.
    Only the mod's namespace is packed. No engine, editor, or game assets are copied.
    The cooker uses Unreal's single-package mode to omit default maps, unrelated
    dependencies and global shader libraries already provided by the game.
+   It names each original package explicitly because single-package mode skips
+   directory discovery. UnrealPak then generates the required `.utoc`/`.ucas`
+   companions and checks their inventory. The private `authoring-global` files
+   remain in `build/`; never install or distribute them.
 6. Run `python tools/package.py` for a development ZIP. The command refuses an
    incomplete cook, uncommitted changes, or a stale build record.
 
@@ -66,7 +70,8 @@ input, never redistributable content. A main-menu rig probe is not a gameplay te
 
 Keep acceptance evidence outside the source commit being tested, for example
 `local/acceptance.json`, using `validation/results.json` as the blank template.
-Record the exact commit, cooked-pack SHA-256, full dependency lock, and a tester,
+Record the exact commit, cooked-pack SHA-256, all three `cookedFiles` hashes from
+the build record, full dependency lock, and a tester,
 date and evidence for each passed scenario. A missing gate blocks packaging:
 
 ```powershell
