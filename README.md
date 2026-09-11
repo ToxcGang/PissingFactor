@@ -49,6 +49,7 @@ Target environment:
 - [Building and development](docs/building.md)
 - [Architecture and networking](docs/architecture.md)
 - [Validation and multiplayer checklist](docs/validation.md)
+- [Hosted and dedicated multiplayer test procedure](docs/multiplayer.md)
 - [Troubleshooting](docs/troubleshooting.md)
 - [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md) · [Credits](CREDITS.md)
 

@@ -45,6 +45,10 @@ end
 local function reset()
     if client then client:close(); client=nil end
     if server then server:reset() end
+    for path,ids in pairs(hooks) do
+        pcall(UnregisterHook,path,ids[1],ids[2])
+    end
+    hooks={}
     server,transport,world,lastTime=nil,nil,nil,nil
 end
 

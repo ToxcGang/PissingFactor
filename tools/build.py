@@ -13,6 +13,7 @@ def run(args):
 
 
 def build(engine, stage, prototype=False):
+    start_commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
     version = read_json(engine / "Engine/Build/Build.version")
     require(tuple(version[k] for k in ("MajorVersion", "MinorVersion", "PatchVersion")) == (5, 4, 4),
             "Use Unreal Editor exactly 5.4.4")
@@ -48,6 +49,7 @@ def build(engine, stage, prototype=False):
         commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
         dirty = subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT, text=True).strip()
         require(not dirty, "Generated editable assets changed; review and commit them, then rerun --stage cook")
+        require(commit == start_commit, "Source commit changed during cooking; rerun --stage cook")
         record = {"engine": "5.4.4", "sourceCommit": commit, "pakSha256": sha256(pak),
                   "cookedAssets": sorted(actual), "kind": "prototype" if prototype else "complete"}
         pak.with_suffix(".build.json").write_text(json.dumps(record, indent=2) + "\n")
