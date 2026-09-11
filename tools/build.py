@@ -25,7 +25,7 @@ def build(engine, stage, prototype=False):
         run([editor, PROJECT, "-run=PFBuild", "-unattended", "-nop4", "-stdout"])
     if stage in {"cook", "all"}:
         run([editor, PROJECT, "-run=Cook", "-TargetPlatform=Windows",
-             "-CookDir=/Game/Mods/PissingFactor", "-CookSinglePackage",
+             f"-CookDir={PROJECT.parent / 'Content/Mods/PissingFactor'}", "-CookSinglePackage",
              "-unattended", "-nop4", "-stdout"])
         content = PROJECT.parent / "Saved/Cooked/Windows/AbioticFactor/Content/Mods/PissingFactor"
         require(content.is_dir(), "No cooked mod content was produced")
