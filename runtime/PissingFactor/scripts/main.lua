@@ -137,4 +137,21 @@ local function poll()
         ExecuteWithDelay(100,poll)
     end)
 end
+RegisterKeyBind(Key.F6,function()
+    ExecuteInGameThread(function()
+        Log.info("Diagnostic snapshot "..Version.mod.." / protocol "..Version.protocol)
+        Log.info("Local input actor: "..tostring(client~=nil).."; enabled: "..tostring(client and client.enabled))
+        if server then
+            local count=0
+            for _,entry in pairs(server.sessions) do
+                count=count+1
+                local state=entry.simulation
+                Log.info(string.format("Session %d: ready=%s held=%s active=%s sequence=%d reason=%s continence=%.4f/%.4f",
+                    count,tostring(state.ready),tostring(state.held),tostring(state.active),state.sequence,
+                    state.reason,entry.player.CurrentContinence,entry.player.MaxContinence))
+            end
+            Log.info("Authority sessions: "..count)
+        end
+    end)
+end)
 ExecuteWithDelay(1000,poll)

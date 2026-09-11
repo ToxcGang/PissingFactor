@@ -2,6 +2,7 @@ local Session = require("pf.session")
 local Effects = require("pf.effects")
 local Trajectory = require("pf.trajectory")
 local Config = require("pf.config")
+local Log = require("pf.log")
 local Server = {}
 Server.__index = Server
 
@@ -49,7 +50,12 @@ function Server:tick(now, dt)
             local ok, err = pcall(function()
                 local state = self.game.state(player)
                 local target = session:tick(now, dt, state)
-                if target then self.game.applyRelief(player, target) end
+                if target then
+                    self.game.applyRelief(player, target)
+                    if self.config.Debug then
+                        Log.info(string.format("Authority relief %.4f -> %.4f",state.current,target))
+                    end
+                end
                 local path
                 if session.active then
                     path = Trajectory.trace(self.game.origin(player), session.aim,

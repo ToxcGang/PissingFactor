@@ -13,6 +13,10 @@ collision, animations, effect rendering or settings panel. Enable
 `EnablePrototype = true` in each installed `config.lua` for this test only.
 The source default remains false. A prototype build cannot be released as 1.0.0.
 
+F6 writes a compact, read-only session snapshot to `UE4SS.log` while the prototype
+is enabled. Set `Debug = true` to log each authoritative continence change.
+Disable the separate `PissingFactorProbe` mod first to avoid sharing its F6 key.
+
 1. Start a host and a remote client, then possess a normal living character on
    each. Confirm both logs report the prototype ready with the expected versions.
 2. Allow the remote character's existing bathroom meter to fall below maximum.

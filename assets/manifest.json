@@ -8,7 +8,10 @@
     "A_PFHands", "A_PFBody", "S_Stream", "S_Splash"
   ],
   "originalSources": [
-    "unreal/AbioticFactor/Plugins/PissingFactorEditor/Source/PissingFactorEditor/Private/PFBuildCommandlet.cpp"
+    "unreal/AbioticFactor/Plugins/PissingFactorEditor/Source/PissingFactorEditor/Private/PFBuildCommandlet.cpp",
+    "tools/synth_audio.py",
+    "assets/audio/S_Stream.wav",
+    "assets/audio/S_Splash.wav"
   ],
   "excluded": "Game meshes, skeleton reference data, extracted textures, audio, animations and reflection dumps"
 }

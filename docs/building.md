@@ -34,6 +34,8 @@ documentation links, and packaging rules. They do not simulate Unreal RPCs.
    the asset manifest deliberately requires the unfinished resources too.
 5. Commit reviewed original assets, then run the same command with `--stage cook`.
    Only the mod's namespace is packed. No engine, editor, or game assets are copied.
+   The cooker uses Unreal's single-package mode to omit default maps, unrelated
+   dependencies and global shader libraries already provided by the game.
 6. Run `python tools/package.py` for a development ZIP. The command refuses an
    incomplete cook, uncommitted changes, or a stale build record.
 
