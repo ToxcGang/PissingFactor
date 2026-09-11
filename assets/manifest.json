@@ -1,0 +1,14 @@
+{
+  "license": "MIT",
+  "author": "ToxcGang",
+  "status": "generation and in-game presentation pending",
+  "requiredCookedAssets": [
+    "ModActor", "BP_PFPlayer", "BP_PFImpact", "BP_PFInput", "WBP_PFSettings",
+    "M_Stream", "M_Stain", "M_Cloud", "M_Ripple",
+    "A_PFHands", "A_PFBody", "S_Stream", "S_Splash"
+  ],
+  "originalSources": [
+    "unreal/AbioticFactor/Plugins/PissingFactorEditor/Source/PissingFactorEditor/Private/PFBuildCommandlet.cpp"
+  ],
+  "excluded": "Game meshes, skeleton reference data, extracted textures, audio, animations and reflection dumps"
+}

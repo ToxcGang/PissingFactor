@@ -1,5 +1,10 @@
 # Changelog
 
+Development progress includes a compiled UE 5.4.4 editor generator, editable
+network/input Blueprints and materials, an opt-in Lua transport integration,
+ownership and lifecycle tests, configuration checks, and guarded packaging.
+This does not constitute a playable 1.0.0 release.
+
 ## 1.0.0 — In development
 
 Initial release target. No stable release has been published.

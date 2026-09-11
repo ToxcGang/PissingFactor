@@ -211,6 +211,105 @@ test("first water hit prevents staining the submerged floor", function()
     equal(r.hit.kind,"water");equal(#r.points,2)
 end)
 
+test("a hold begun inside a menu requires release after leaving it", function()
+    local i = Input.new()
+    equal(i:update({keyboard=true},false).held,false)
+    equal(i:update({keyboard=true},true).held,false)
+    i:update({},true)
+    equal(i:update({keyboard=true},true).held,true)
+end)
+
+local Server = require("pf.server")
+local function fixture()
+    local game = {valid=function(o) return o and o.valid ~= false end,
+        same=function(a,b) return a == b end,
+        state=function(p) return p end,
+        origin=function() return {X=0,Y=0,Z=100} end,
+        applyRelief=function(p,value) p.current=value; p.writes=(p.writes or 0)+1 end}
+    local net = {states={}, impacts={}, destroyed={}}
+    function net:ownedBy(actor,p) return actor.owner == p end
+    function net:destroy(actor) self.destroyed[actor]=true end
+    function net:trace() return hit end
+    function net:publishImpact(r) self.impacts[r.id]=r end
+    function net:publishState(actor,s) self.states[actor]={active=s.active,reason=s.reason} end
+    function net:stop(actor,reason) self.states[actor]={active=false,reason=reason} end
+    function net:pruneImpacts(records)
+        local alive={}
+        for _,r in ipairs(records) do alive[r.id]=true end
+        for id in pairs(self.impacts) do if not alive[id] then self.impacts[id]=nil end end
+    end
+    local s = Server.new(Config.validate({}),game,net)
+    local p=player(); p.valid=true
+    local actor={owner=p}
+    s:add("one",p,actor)
+    return s,p,actor,net,game
+end
+local function message(seq,held)
+    return {mod="1.0.0",protocol=1,sequence=seq or 1,held=held ~= false,aim=aim}
+end
+test("server rejects packets addressed to another actor or owner",function()
+    local s,p,a=fixture()
+    equal(s:receive("one",{},message(),0),false)
+    a.owner={}
+    equal(s:receive("one",a,message(),0),false)
+    s:tick(0,0.1); near(p.current,0)
+end)
+test("server rejects malformed envelopes without throwing",function()
+    local s,p,a=fixture()
+    equal(s:receive("one",a,nil,0),false)
+    equal(s:receive("one",a,message(),0/0),false)
+    equal(s:receive("missing",a,message(),0),false)
+    s:tick(0,0.1); equal(p.writes,nil)
+end)
+test("server awards relief only after an owned compatible request",function()
+    local s,p,a,n=fixture()
+    s:tick(0,0.1); near(p.current,0)
+    assert(s:receive("one",a,message(),0.1))
+    s:tick(0.1,0.1); near(p.current,1.25); equal(n.states[a].active,true)
+end)
+test("duplicate simulation dispatch cannot award twice",function()
+    local s,p,a=fixture(); s:receive("one",a,message(),0)
+    s:tick(0,0.1); s:tick(0,0.1); near(p.current,1.25)
+    s:tick(-1,0.1); near(p.current,1.25)
+end)
+test("failed native stat update stops effects and isolates other players",function()
+    local s,p,a,n,g=fixture()
+    local p2=player(); local a2={owner=p2}
+    s:add("two",p2,a2)
+    g.applyRelief=function(who,value)
+        if who == p then error("binding changed") end
+        who.current=value
+    end
+    s:receive("one",a,message(),0); s:receive("two",a2,message(),0)
+    s:tick(0,0.1)
+    equal(n.states[a].active,false); near(p2.current,1.25)
+    equal(s.sessions.one.simulation.latched,true)
+end)
+test("disconnect destroys only that player's actor and releases session",function()
+    local s,p,a,n=fixture(); s:receive("one",a,message(),0)
+    s:tick(0,0.1); p.valid=false; s:tick(0.1,0.1)
+    equal(s.sessions.one,nil); equal(n.destroyed[a],true)
+    equal(s:receive("one",a,message(2),0.2),false)
+end)
+test("respawning rejects old actor packets",function()
+    local s,p,a,n=fixture(); local replacement={owner=p}
+    s:add("one",p,replacement)
+    equal(n.destroyed[a],true)
+    equal(s:receive("one",a,message(),0),false)
+    s:tick(0,0.1); equal(p.writes,nil)
+end)
+test("world reset removes replicated cosmetics and sessions",function()
+    local s,p,a,n=fixture(); s:receive("one",a,message(),0); s:tick(0,0.1)
+    assert(next(n.impacts)); s:reset()
+    equal(next(n.impacts),nil); equal(next(s.sessions),nil); equal(n.destroyed[a],true)
+end)
+test("version mismatch stops an already active player",function()
+    local s,p,a,n=fixture(); s:receive("one",a,message(),0); s:tick(0,0.1)
+    local wrong=message(2); wrong.mod="1.0.1"
+    equal(s:receive("one",a,wrong,0.1),false); s:tick(0.1,0.1)
+    near(p.current,1.25); equal(n.states[a].active,false)
+end)
+
 for _, failure in ipairs(failures) do print("FAIL " .. failure) end
 print(string.format("%d/%d tests passed", total - #failures, total))
 assert(#failures == 0, "Gameplay tests failed")

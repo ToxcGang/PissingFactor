@@ -24,6 +24,11 @@ UE4SS. Controller support means controllers on PC, not installation on consoles.
 ## Development status
 
 The repository contains the implementation in progress, tests, and build tools.
+The current milestone is an opt-in transport/continence prototype: the editor
+plugin generates replicated actors, consumed key bindings, and material assets.
+Animations, water collision, presentation, rebinding UI and multiplayer acceptance
+are unfinished. `EnablePrototype` defaults to false so a source installation
+does not change gameplay silently.
 Unit tests do **not** establish in-game or multiplayer compatibility. See
 [validation](docs/validation.md) for the evidence and remaining release gates.
 There is no `v1.0.0` release until all required acceptance checks pass.

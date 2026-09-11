@@ -20,12 +20,13 @@ function Input:update(keys, enabled)
     local risingBumper, risingDown = bumper and not self.bumper, down and not self.down
     if enabled ~= true then
         self:cancel()
+        self.blocked = self.blocked or bumper or down or keyboard
     else
         if risingBumper then
             self.armed = not down -- modifier must precede D-pad Down
             self.used = false
         end
-        if risingDown and not bumper then actions.drop = true end
+        if risingDown and not bumper and not self.blocked then actions.drop = true end
         if bumper and down and self.armed then self.used = true end
         if self.bumper and not bumper and not self.used and not self.blocked then
             actions.previousHotbar = true

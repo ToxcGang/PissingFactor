@@ -6,7 +6,8 @@
     "steamAppId": 427410,
     "steamBuildId": 24343447
   },
-  "unreal": { "version": "5.4.4" },
+  "unreal": { "version": "5.4.4", "changelist": 35576357 },
+  "build": { "msvcToolset": "14.38.33130", "msvcCompiler": "14.38.33145", "windowsSdk": "10.0.26100.0" },
   "ue4ss": {
     "bundleVersion": "1.22.0",
     "runtimeVersion": "3.0.1-1012-gc838a8ac",

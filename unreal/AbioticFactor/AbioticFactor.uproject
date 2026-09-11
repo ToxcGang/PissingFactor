@@ -1,0 +1,10 @@
+{
+  "FileVersion": 3,
+  "EngineAssociation": "5.4",
+  "Category": "Mods",
+  "Description": "PissingFactor asset authoring project. No game content is included.",
+  "Plugins": [
+    { "Name": "PissingFactorEditor", "Enabled": true },
+    { "Name": "PythonScriptPlugin", "Enabled": true }
+  ]
+}

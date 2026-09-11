@@ -13,6 +13,11 @@ Missing checks are **unverified**, not passed.
   `OnRep_CurrentContinence`, player/controller types, FPArms, and interruption
   state fields. Runtime semantics remain to be tested in a disposable world.
 - Portable Lua tests pass; see CI and `python tools/test.py` for the current count.
+- The read-only rig probe exported 45 first-person bones and 27 bones from the
+  modular body/head mesh. The body uses `hips`; game reference transforms stay local.
+- `IsAnyMenuOpen` successfully updates the Lua out-parameter table in the main menu.
+- Unreal Editor 5.4.4 (CL 35576357) compiled the editor plugin with MSVC 14.38.33145
+  and generated the first editable actors/materials. This is not a cooked-game test.
 
 ## Required gameplay scenarios
 

@@ -1,5 +1,6 @@
 -- Server-owned gameplay settings. Clients cannot override the host's values.
 return {
+    EnablePrototype = false, -- unfinished integration; use only in a disposable test world
     ReliefSeconds = 8.0,
     RangeCm = 400.0,
     StainSeconds = 60.0,

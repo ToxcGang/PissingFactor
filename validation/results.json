@@ -1,0 +1,23 @@
+{
+  "version": "1.0.0",
+  "protocol": 1,
+  "sourceCommit": null,
+  "pakSha256": null,
+  "dependencies": null,
+  "checks": {
+    "singleplayer": {"status": "pending"},
+    "emergency": {"status": "pending"},
+    "controller": {"status": "pending"},
+    "interruptions": {"status": "pending"},
+    "surfaces": {"status": "pending"},
+    "water": {"status": "pending"},
+    "animations": {"status": "pending"},
+    "hosted_multiplayer": {"status": "pending"},
+    "dedicated_multiplayer": {"status": "pending"},
+    "late_join": {"status": "pending"},
+    "network_faults": {"status": "pending"},
+    "lifecycle": {"status": "pending"},
+    "performance": {"status": "pending"},
+    "clean_install": {"status": "pending"}
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "FileVersion": 3,
+  "Version": 10000,
+  "VersionName": "1.0.0",
+  "FriendlyName": "PissingFactor asset builder",
+  "Description": "Editor-only generation of original Blueprint assets. Never a runtime game dependency.",
+  "Category": "Modding",
+  "CreatedBy": "ToxcGang",
+  "CanContainContent": false,
+  "Modules": [
+    { "Name": "PissingFactorEditor", "Type": "Editor", "LoadingPhase": "Default" }
+  ]
+}
