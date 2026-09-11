@@ -24,8 +24,14 @@ def build(engine, stage, prototype=False):
              "Development", PROJECT, "-WaitMutex", "-NoHotReloadFromIDE"])
         run([editor, PROJECT, "-run=PFBuild", "-unattended", "-nop4", "-stdout"])
     if stage in {"cook", "all"}:
+        source_content = PROJECT.parent / "Content/Mods/PissingFactor"
+        packages = ["/Game/Mods/PissingFactor/" + p.relative_to(source_content).with_suffix("").as_posix()
+                    for p in sorted(source_content.rglob("*.uasset"))]
+        require(packages, "No original mod assets were found")
+        # Single-package mode skips directory discovery together with soft
+        # references, so list every original package explicitly.
         run([editor, PROJECT, "-run=Cook", "-TargetPlatform=Windows",
-             f"-CookDir={PROJECT.parent / 'Content/Mods/PissingFactor'}", "-CookSinglePackage",
+             "-Package=" + "+".join(packages), "-CookSinglePackage",
              "-unattended", "-nop4", "-stdout"])
         content = PROJECT.parent / "Saved/Cooked/Windows/AbioticFactor/Content/Mods/PissingFactor"
         require(content.is_dir(), "No cooked mod content was produced")
