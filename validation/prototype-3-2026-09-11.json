@@ -1,0 +1,92 @@
+{
+  "kind": "prototype-observations",
+  "version": "1.0.0",
+  "protocol": 1,
+  "prototype": 3,
+  "date": "2026-09-11",
+  "timezone": "America/Denver",
+  "tester": "ToxcGang",
+  "sourceCommit": "3c807b29b07be67680320d644fa330c2c19e27ba",
+  "package": "PissingFactor-1.0.0-prototype-3.zip",
+  "packageSha256": "b6adc514b06de0af365e8f03391402a104a93211e3875a5aa9b13b34913fc44a",
+  "cookedFiles": {
+    "PissingFactor.pak": "0955d1b99f49e608383fdf664b52c44ddda3cc3bbf2560301884041b896e77e6",
+    "PissingFactor.ucas": "706e9557260ca30fdc951f33ba43d752911ced1a0517945c5f6b7ad432e3c90a",
+    "PissingFactor.utoc": "208f9a87b8263921efc08d6ef71f21e937cdbdcefa66616d4168a568b104fb9f"
+  },
+  "dependencies": {
+    "game": {
+      "name": "Abiotic Factor",
+      "platform": "Windows Steam",
+      "version": "1.4.0.28206",
+      "steamAppId": 427410,
+      "steamBuildId": 24343447
+    },
+    "unreal": {
+      "version": "5.4.4",
+      "changelist": 35576357
+    },
+    "build": {
+      "msvcToolset": "14.38.33130",
+      "msvcCompiler": "14.38.33145",
+      "windowsSdk": "10.0.26100.0"
+    },
+    "ue4ss": {
+      "bundleVersion": "1.22.0",
+      "runtimeVersion": "3.0.1-1012-gc838a8ac",
+      "url": "https://github.com/igromanru/AF-UE4SS/releases/download/1.22.0/UE4SS_v3.0.1-1012-gc838a8ac_Abiotic-Factor.zip",
+      "sha256": "51898e42324a30286062e7617e7dd92e3ec555d3f62545f76984646d5a9c6a33"
+    }
+  },
+  "installedFilesMatchPackage": [
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/enabled.txt",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/main.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/client.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/effects.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/game.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/input.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/log.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/preferences.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/pump.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/server.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/session.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/trajectory.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/transport.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/version.lua",
+    "AbioticFactor/Content/Paks/LogicMods/PissingFactor.pak",
+    "AbioticFactor/Content/Paks/LogicMods/PissingFactor.ucas",
+    "AbioticFactor/Content/Paks/LogicMods/PissingFactor.utoc"
+  ],
+  "localConfigExcludedFromHashComparison": true,
+  "userReport": "LB cycled normally without freezing, and D-pad Left relieved bathroom need and stopped on release.",
+  "observations": [
+    {
+      "id": "lb_inventory_cycle",
+      "status": "passed",
+      "evidence": "User manually confirmed normal LB inventory cycling without a freeze."
+    },
+    {
+      "id": "controller_hold_relief",
+      "status": "passed",
+      "evidence": "User confirmed D-pad Left relief. Authority relief log entries at 22:27:42.158 through 22:27:43.580 increase continence from 63.0000 to 75.0000 in thirteen steps, capped at the recorded maximum of 75."
+    },
+    {
+      "id": "controller_release",
+      "status": "passed",
+      "evidence": "User confirmed stopping on release. At 22:28:00.991 the log reports ready=true, held=false, active=false, sequence=34, reason=released and continence=75/75."
+    },
+    {
+      "id": "return_to_menu",
+      "status": "observed",
+      "evidence": "At 22:28:16 the three world hooks were unregistered; at 22:28:17 the mod driver loaded in MainMenu. This is evidence of one successful teardown, not full lifecycle acceptance."
+    }
+  ],
+  "notEstablished": [
+    "Long-session stability or a proven root cause for the earlier freezes",
+    "Keyboard P, partial relief, empty-state restart latch or bathroom emergencies",
+    "Menus during a hold, attacks, sprinting, focus loss, controller disconnect or rebinding",
+    "Remote-client RPC delivery, hosted co-op or dedicated multiplayer",
+    "Visuals, animations, water collision, audio or full release acceptance"
+  ],
+  "releaseValidated": false
+}

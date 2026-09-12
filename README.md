@@ -26,11 +26,12 @@ UE4SS. Controller support means controllers on PC, not installation on consoles.
 The repository contains the implementation in progress, tests, and build tools.
 The current milestone is an opt-in transport/continence prototype: the editor
 plugin generates replicated actors, consumed key bindings, and material assets.
-The first manual run confirmed idle input/authority setup but reported a freeze.
-The subsequent prototype 2 run also froze, with the user identifying LB as the
-trigger. Prototype 3 uses D-pad Left alone, removes LB interception and native
-action replay, and reads input on the actor tick without Lua input-event hooks.
-It awaits the [stability-first manual retest](docs/manual-prototype-test.md).
+Prototype 3 uses D-pad Left alone, removes LB interception and native action
+replay, and reads input on the actor tick without Lua input-event hooks. A manual
+local test confirmed ordinary LB cycling without a freeze, D-pad Left bathroom
+relief and stopping on release. The authority log records continence rising from
+63 to 75. Interrupted actions, longer sessions and remote-client behavior still
+need testing; follow the [manual procedure](docs/manual-prototype-test.md).
 Animations, water collision, presentation, rebinding UI and multiplayer acceptance
 are unfinished. `EnablePrototype` defaults to false so a source installation
 does not change gameplay silently.

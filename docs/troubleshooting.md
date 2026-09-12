@@ -19,7 +19,9 @@ The user subsequently reported prototype 2 freezing when pressing LB. Its last
 F6 snapshot showed ready input and continence 63/75; the latest loader log has
 no exception after that snapshot. Prototype 3 removes the LB interception and
 native action replay, binds D-pad Left alone, and removes the Lua input-event
-hooks. This removes the suspected path, but is not a confirmed freeze fix.
+hooks. The subsequent manual test confirmed normal LB cycling without a freeze
+and D-pad Left relief that stopped on release. This resolves the reported LB
+symptom in that test; the root cause and longer-session stability remain unproven.
 
 Install all files from the new prototype and follow the
 [stability-first manual test](manual-prototype-test.md). Preserve the final

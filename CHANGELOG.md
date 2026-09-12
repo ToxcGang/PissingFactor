@@ -13,8 +13,9 @@ Initial release target. No stable release has been published.
   keyboard P. Remove LB, D-pad Down, menu-button and unused F8 capture, plus all
   native inventory/drop/menu action replay. Read Blueprint key state on the
   existing 10 Hz tick instead of hooking input events into Lua. Reject old input
-  assets before enabling capture. Responds to a second freeze reported on LB;
-  the cause and in-game stability still require manual verification.
+  assets before enabling capture. A subsequent manual test confirmed normal LB
+  cycling without freezing, D-pad Left relief and stopping on release. The
+  earlier freeze's root cause and longer-session stability remain unproven.
 
 - Actor-tick prototype 2: replace recurring UE4SS async/game-thread queues with
   the cooked mod actor's tick; handle F6 edges on that same thread and display

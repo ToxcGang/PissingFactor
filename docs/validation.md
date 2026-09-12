@@ -40,8 +40,19 @@ Missing checks are **unverified**, not passed.
   on input events. It consumes only P and D-pad Left, checked in the compiled
   Blueprint; input state is read at 10 Hz. Offline regression checks cover the
   real Lua client with mocked engine objects, including hold/release, interruption,
-  stale key state and rejection of old input assets. In-game stability and relief
-  await the user's manual test. No automated desktop/game testing is used.
+  stale key state and rejection of old input assets. No automated desktop/game
+  testing is used.
+- On 2026-09-11, the user confirmed that prototype 3 restored ordinary LB cycling
+  without freezing, D-pad Left relieved bathroom need, and releasing it stopped
+  the action. The local authority log records 13 relief steps from 63 to 75 at
+  22:27:42-22:27:43; the 22:28:00 snapshot shows `held=false`, `active=false`,
+  `reason=released` and continence 75/75. The world hooks were subsequently
+  removed on return to the main menu. The 17 installed runtime/container files
+  match the tested archive, excluding local configuration. Exact source commit,
+  hashes, dependencies and the user's report are in the
+  [prototype 3 observation record](https://github.com/ToxcGang/PissingFactor/blob/main/validation/prototype-3-2026-09-11.json).
+  These individual checks passed; the broader release gates remain pending,
+  including interruptions, keyboard behavior, long sessions and multiplayer.
 
 ## Required gameplay scenarios
 
