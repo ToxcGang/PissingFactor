@@ -9,6 +9,12 @@ This does not constitute a playable 1.0.0 release.
 
 Initial release target. No stable release has been published.
 
+- Actor-tick prototype 2: replace recurring UE4SS async/game-thread queues with
+  the cooked mod actor's tick; handle F6 edges on that same thread and display
+  local status. Suppress idle RPCs/actor updates and reduce player discovery to
+  once per second. Addresses the observed loader callback failure pattern;
+  game stability and relief are pending a manual retest.
+
 - Implement hold/release and controller shortcut state machines.
 - Implement gradual continence relief with server-side eligibility, version
   checks, input timeouts, and protection against stale input.

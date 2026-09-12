@@ -1,5 +1,10 @@
 # Manual prototype test
 
+**Current build: actor-tick prototype 2.** Replace the earlier prototype before
+retesting. Both the Lua files and all three cooked files changed; updating only
+Lua leaves an incompatible `ModActor`. This revision is a freeze mitigation,
+not a confirmed fix or stable release.
+
 This development build tests input, owned network actors and the existing
 bathroom stat. It has no rendered stream, stains, water effects, animations,
 in-game audio or settings/rebinding panel yet. Those are unfinished features,
@@ -20,7 +25,29 @@ not the expected result of this first test. No multiplayer acceptance has passed
    was created for this purpose. Finish job/trait selection if needed, then enter
    normal gameplay. Leave your established worlds out of this test.
 
-## First test: keyboard and bathroom meter
+## First test: stability and visible status
+
+1. Enter normal gameplay in the disposable world. The startup log should include
+   `actor-tick prototype 2` and `Actor-tick prototype 2 ready`. If it only says
+   `Waiting for BPModLoaderMod`, send that log before testing the ability.
+2. **Tap and release F6 once.** The mod should show a local status message in the
+   game's text-message area, and write one diagnostic snapshot to `UE4SS.log`.
+   Holding F6 should produce only one snapshot. The message is local only.
+3. `Continence 75/75` (or any equal current/maximum pair) means there is no
+   bathroom need yet. This is a valid diagnostic result; you do not need to wait
+   for need to build for this stability test.
+4. Play normally for five minutes without holding P, then tap F6 once more.
+   Report whether both status messages appeared and whether the game stayed
+   responsive. Only continue with relief tests after this passes.
+
+If the game freezes again, note the time and preserve the **last 40 lines of the
+whole UE4SS.log**, not just `[PissingFactor]` entries. The first failure included
+`[UE4SS.EngineTick.LuaModImpl] ... Ref was not function`, which the mod-only
+filter omitted. Send any `Driver initialization stopped` message too. If needed,
+close the game yourself, set `EnablePrototype = false`, and report whether the
+same world stays responsive with gameplay disabled.
+
+## Next: keyboard and bathroom meter
 
 1. Stand still on solid ground, with menus and chat closed. Press **F6**.
 2. Let the bathroom need build until continence is below maximum. F6 records the
@@ -63,8 +90,9 @@ settings-panel navigation are deferred until that UI is implemented.
 ## Send back
 
 Use `AbioticFactor/Binaries/Win64/ue4ss/UE4SS.log` in your game installation.
-Copy just the `[PissingFactor]` lines covering startup and your F6 snapshots,
-including the first `Integration stopped` or other error if present. Include:
+For normal results, copy the `[PissingFactor]` startup and F6 snapshot lines.
+For a freeze or crash, include the last 40 lines regardless of prefix, including
+the first error if present. Include:
 
 - Keyboard or controller, plus the controller model/Steam Input setting.
 - What the bathroom meter did during the hold and after release.

@@ -16,3 +16,6 @@ for path in (ROOT / "runtime").rglob("*.lua"):
     compile_lua(path.read_text(encoding="utf-8"), "@" + str(path))
 compile_lua((ROOT / "tools/probe.lua").read_text(encoding="utf-8"), "@probe.lua")
 lua.execute((ROOT / "tests/run.lua").read_text(encoding="utf-8"))
+bootstrap = LuaRuntime(unpack_returned_tuples=True)
+bootstrap.globals().package.path = str(ROOT / "runtime/PissingFactor/scripts/?.lua").replace("\\", "/") + ";" + bootstrap.globals().package.path
+bootstrap.execute((ROOT / "tests/bootstrap.lua").read_text(encoding="utf-8"))

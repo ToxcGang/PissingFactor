@@ -1,5 +1,25 @@
 # Troubleshooting
 
+## Earlier prototype freezes / F6 seems to do nothing
+
+The first prototype's F6 wrote only to the log. A reported run showed one ready
+authority session and `continence=75/75`, followed by a UE4SS EngineTick error
+`[Lua::Registry::get_function_ref] Ref was not function` and removal of the hook.
+This resembles the overlapping-action failure in
+[UE4SS issue 1180](https://github.com/UE4SS-RE/RE-UE4SS/issues/1180).
+The exact cause of the game freeze has not been reproduced under a debugger.
+
+Actor-tick prototype 2 removes PissingFactor's repeating async/game-thread queues
+and its external-thread F6 callback. A cooked `ModActor:ReceiveTick` hook drives
+the simulation; F6 is read on that same thread, limited to one snapshot per press.
+It also attempts a local in-game status message. Idle input RPCs and redundant
+idle actor updates are suppressed. This does not repair other mods or UE4SS itself.
+
+Install all files from the new prototype and follow the
+[stability-first manual test](manual-prototype-test.md). Preserve the final
+unfiltered log lines if it freezes: the loader error is outside the PissingFactor
+prefix. Game and loader versions remain pinned while this mitigation is evaluated.
+
 ## Nothing happens
 
 Confirm that both the Lua folder and cooked asset pack are installed. Source

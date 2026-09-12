@@ -65,7 +65,7 @@ function Client:update(heartbeat)
     end
     if actions.drop then self.player:InpActEvt_DropItem_K2Node_InputActionEvent_11(key("Gamepad_DPad_Down")) end
     if actions.held~=self.lastHeld then self:send(actions.held,true)
-    elseif heartbeat then self:send(actions.held,false) end
+    elseif heartbeat and actions.held then self:send(true,false) end
     return true
 end
 

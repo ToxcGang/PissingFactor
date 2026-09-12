@@ -15,6 +15,7 @@
 #include "GameFramework/Actor.h"
 #include "GameFramework/Pawn.h"
 #include "K2Node_CustomEvent.h"
+#include "K2Node_Event.h"
 #include "K2Node_InputKey.h"
 #include "K2Node_VariableSet.h"
 #include "Kismet2/KismetEditorUtilities.h"
@@ -218,6 +219,30 @@ static void InputActor()
     Save(BP);
 }
 
+static void DriverActor()
+{
+    UBlueprint* BP = Actor(TEXT("ModActor"), false);
+    Variable(BP, TEXT("PFHeartbeatSeen"), Type(UEdGraphSchema_K2::PC_Boolean), TEXT("false"), false);
+    FGraphNodeCreator<UK2Node_Event> Creator(*BP->UbergraphPages[0]);
+    UK2Node_Event* Tick = Creator.CreateNode();
+    Tick->EventReference.SetExternalMember(TEXT("ReceiveTick"), AActor::StaticClass());
+    Tick->bOverrideFunction = true;
+    Creator.Finalize();
+    SetConstant(BP, TEXT("PFHeartbeatSeen"), Tick->FindPinChecked(UEdGraphSchema_K2::PN_Then), TEXT("true"));
+    FKismetEditorUtilities::CompileBlueprint(BP);
+    check(BP->Status != BS_Error);
+    check(BP->GeneratedClass->FindFunctionByName(TEXT("ReceiveTick"))->GetOuter() == BP->GeneratedClass);
+    AActor* CDO = CastChecked<AActor>(BP->GeneratedClass->GetDefaultObject());
+    CDO->PrimaryActorTick.bCanEverTick = true;
+    CDO->PrimaryActorTick.bStartWithTickEnabled = true;
+    CDO->PrimaryActorTick.bAllowTickOnDedicatedServer = true;
+    CDO->PrimaryActorTick.bTickEvenWhenPaused = true;
+    // A nonzero engine tick interval can stop advancing while paused. Lua
+    // throttles simulation with real world time and reads diagnostic key edges.
+    CDO->PrimaryActorTick.TickInterval = 0.f;
+    Save(BP);
+}
+
 static void ImpactActor()
 {
     UBlueprint* BP = Actor(TEXT("BP_PFImpact"), true);
@@ -278,7 +303,7 @@ int32 UPFBuildCommandlet::Main(const FString& Params)
     PF::PlayerActor();
     PF::ImpactActor();
     PF::InputActor();
-    PF::Save(PF::Actor(TEXT("ModActor"), false));
+    PF::DriverActor();
     PF::Material(TEXT("M_Stream"), false, TEXT("return Alpha;"));
     PF::Material(TEXT("M_Stain"), true,
         TEXT("float2 p=UV*2-1; float r=length(p); float a=atan2(p.y,p.x); return Alpha*(1-smoothstep(0.65+0.08*sin(a*7),0.95,r));"));

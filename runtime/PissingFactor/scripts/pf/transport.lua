@@ -21,7 +21,7 @@ local function asset(name)
 end
 
 function Transport.new(world, config)
-    return setmetatable({world=world,config=config,impacts={},
+    return setmetatable({world=world,config=config,impacts={},states={},
         playerClass=asset("BP_PFPlayer"),impactClass=asset("BP_PFImpact"),
         inputClass=asset("BP_PFInput")},Transport)
 end
@@ -58,10 +58,13 @@ function Transport:ownedBy(actor,player)
 end
 
 function Transport:destroy(actor)
+    if actor then self.states[actor]=nil end
     if Game.valid(actor) then actor:K2_DestroyActor() end
 end
 
 function Transport:publishState(actor,session,path,now)
+    local previous=self.states[actor]
+    if not session.active and previous and not previous.active and previous.reason==session.reason then return end
     actor.PFActive=session.active
     actor.PFReason=session.reason
     actor.PFAim=session.aim
@@ -72,6 +75,7 @@ function Transport:publishState(actor,session,path,now)
         actor:K2_SetActorLocation(path.points[1],false,{},true)
     end
     actor:ForceNetUpdate()
+    self.states[actor]={active=session.active,reason=session.reason}
 end
 
 function Transport:stop(actor,reason)

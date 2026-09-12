@@ -102,4 +102,22 @@ function Game.origin(player)
     return { X=location.X, Y=location.Y, Z=location.Z - 10 }
 end
 
+function Game.localController(world)
+    for _, controller in ipairs(FindAllOf("PlayerController") or {}) do
+        if Game.valid(controller) and controller:IsLocalController()
+            and Game.same(controller:GetWorld(), world) then return controller end
+    end
+end
+
+function Game.showStatus(controller, message)
+    if not Game.valid(controller) or not controller:IsLocalController() then return false end
+    -- This is the game's LOCAL display function, never its SendTextChat RPC.
+    -- It shows a system-style status only on this player's machine.
+    local ok = pcall(function()
+        controller:Local_DisplayTextChatMessage("PissingFactor", {R=1,G=0.8,B=0.1,A=1},
+            message, {R=1,G=1,B=1,A=1}, controller.PlayerState, false)
+    end)
+    return ok
+end
+
 return Game

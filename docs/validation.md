@@ -23,6 +23,16 @@ Missing checks are **unverified**, not passed.
   all three containers, spawned `ModActor`, loaded the prototype classes and
   registered both RPC hooks and all ten input-event hooks in the main menu.
   This proves loading only; it does not establish possessed-player or remote-client behavior.
+- A user-run single-player session on 2026-09-11 established one possessed-player
+  input actor and an idle authority handshake (`ready=true`, continence 75/75).
+  F6 snapshots succeeded. The user reported a freeze before testing relief; the
+  full loader log ended with an EngineTick `Ref was not function` error. This is
+  a **failed stability test**, not a passed single-player acceptance gate.
+- Actor-tick prototype 2 replaces the overlapping update/diagnostic queues.
+  Its authoring commandlet compiles with zero errors/warnings, and offline
+  bootstrap checks cover throttling, diagnostic edges, cleanup and old-asset
+  rejection. Its in-game stability, local message display and relief remain
+  pending the user's manual retest. No automated desktop/game testing is used.
 
 ## Required gameplay scenarios
 
