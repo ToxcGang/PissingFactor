@@ -47,6 +47,7 @@ Target environment:
 
 - [Installation and removal](docs/installation.md)
 - [Building and development](docs/building.md)
+- [Manual prototype test: start here](docs/manual-prototype-test.md)
 - [Architecture and networking](docs/architecture.md)
 - [Validation and multiplayer checklist](docs/validation.md)
 - [Hosted and dedicated multiplayer test procedure](docs/multiplayer.md)
