@@ -54,7 +54,9 @@ After presentation and collision are implemented, run every scenario in
 - Actor/component counts during sustained use, after expiry and after leaving
   the world; maximum 256 stains/clouds and five new stamps per second per player.
 
-Physical controller testing must cover modifier-first input, release of either
-button, bumper-only action replay, no accidental drop, menu navigation,
+Physical controller testing must cover holding D-pad Left alone, stopping on
+release, ordinary LB/L1 inventory cycling, no accidental drop, menu navigation,
 rebinding and device disconnection. Verify equipment presentation after every
-interruption, including focus loss.
+interruption, including focus loss. All participants must install the same
+prototype package, including all three cooked files, even when the mod version
+still reads 1.0.0.

@@ -1,47 +1,27 @@
--- Edge/chord arbitration independent of engine bindings. Interception happens
--- before native action dispatch; observing keys without consuming them is unsafe.
+-- Either action key holds the ability. Interruptions require releasing both
+-- inputs before starting again; native inventory/menu actions are never replayed.
 local Input = {}
 Input.__index = Input
 
 function Input.new()
-    return setmetatable({ bumper = false, down = false, keyboard = false,
-        used = false, armed = false, blocked = false, held = false }, Input)
+    return setmetatable({ controller = false, keyboard = false,
+        blocked = false, held = false }, Input)
 end
 
 function Input:cancel()
     self.held = false
-    self.blocked = self.bumper or self.down or self.keyboard
-    self.used = true -- do not replay a queued hotbar change after a menu opens
+    self.blocked = self.controller or self.keyboard
 end
 
 function Input:update(keys, enabled)
-    local bumper, down, keyboard = keys.bumper == true, keys.down == true, keys.keyboard == true
-    local actions = { previousHotbar = false, drop = false, consumeBumper = false, consumeDown = false }
-    local risingBumper, risingDown = bumper and not self.bumper, down and not self.down
+    self.controller, self.keyboard = keys.controller == true, keys.keyboard == true
+    local down = self.controller or self.keyboard
     if enabled ~= true then
-        self:cancel()
-        self.blocked = self.blocked or bumper or down or keyboard
-    else
-        if risingBumper then
-            self.armed = not down -- modifier must precede D-pad Down
-            self.used = false
-        end
-        if risingDown and not bumper and not self.blocked then actions.drop = true end
-        if bumper and down and self.armed then self.used = true end
-        if self.bumper and not bumper and not self.used and not self.blocked then
-            actions.previousHotbar = true
-        end
-        actions.consumeBumper = bumper or self.bumper
-        actions.consumeDown = (bumper and self.armed) or self.used and (down or self.down)
-        self.held = not self.blocked and (keyboard or (bumper and down and self.armed))
+        self.blocked = self.blocked or down
     end
-    self.bumper, self.down, self.keyboard = bumper, down, keyboard
-    if not bumper then self.armed = false end
-    if not bumper and not down and not keyboard then
-        self.blocked, self.used = false, false
-    end
-    actions.held = self.held
-    return actions
+    if not down then self.blocked = false end
+    self.held = enabled == true and not self.blocked and down
+    return { held = self.held }
 end
 
 return Input

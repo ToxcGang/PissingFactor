@@ -10,7 +10,7 @@ UE4SS. Controller support means controllers on PC, not installation on consoles.
 
 ## Intended gameplay
 
-- Hold **P**, or hold **LB/L1** followed by **D-pad Down**. Release to stop.
+- Hold **P**, or hold **D-pad Left** alone. Release to stop.
 - Walk and aim while peeing. Attacks, sprinting, interactions, menus, death,
   and lost input focus interrupt the action.
 - Relieve the existing bathroom need gradually; stop when empty. The default
@@ -27,8 +27,10 @@ The repository contains the implementation in progress, tests, and build tools.
 The current milestone is an opt-in transport/continence prototype: the editor
 plugin generates replicated actors, consumed key bindings, and material assets.
 The first manual run confirmed idle input/authority setup but reported a freeze.
-The current actor-tick prototype 2 includes a scheduling mitigation and awaits
-the [stability-first manual retest](docs/manual-prototype-test.md).
+The subsequent prototype 2 run also froze, with the user identifying LB as the
+trigger. Prototype 3 uses D-pad Left alone, removes LB interception and native
+action replay, and reads input on the actor tick without Lua input-event hooks.
+It awaits the [stability-first manual retest](docs/manual-prototype-test.md).
 Animations, water collision, presentation, rebinding UI and multiplayer acceptance
 are unfinished. `EnablePrototype` defaults to false so a source installation
 does not change gameplay silently.

@@ -21,7 +21,7 @@ function driver:GetClass()
 end
 driver.PFHeartbeatSeen=false
 network.PFReason="released"
-local transport={inputClass={DynamicBindingObjects={ForEach=function()end}}}
+local transport={}
 function transport:now() return now end
 function transport:spawnPlayer() return network end
 function transport:ownedBy(a,p) return a==network and p==player end
@@ -45,7 +45,10 @@ package.loaded["pf.client"]={new=function(_,p,c,a)
 end}
 function FName(s)return s end
 function FindAllOf(name)return name=="test_player" and {player} or {network} end
-function RegisterHook(path,callback)nextId=nextId+1;hooks[path]=callback;return nextId,nextId end
+function RegisterHook(path,callback)
+    assert(not path:find("BP_PFInput",1,true),"Input events must not call back into Lua")
+    nextId=nextId+1;hooks[path]=callback;return nextId,nextId
+end
 function UnregisterHook(path)hooks[path]=nil end
 function RegisterBeginPlayPostHook(callback)beginPlay=callback end
 function RegisterEndPlayPreHook(callback)endPlay=callback end
@@ -81,4 +84,4 @@ driver.PFHeartbeatSeen=nil
 beginPlay(wrap(driver))
 assert(next(hooks)==nil,"Old cooked assets must not start the runtime")
 assert(logs[#logs]:find("Old ModActor assets",1,true),"Old assets need an actionable diagnostic")
-print("Bootstrap checks passed: engine-only pump, 10 Hz, F6 edges, empty status, teardown, stale tick, old assets")
+print("Bootstrap checks passed: engine-only pump, no input hooks, 10 Hz, F6 edges, empty status, teardown, stale tick, old assets")

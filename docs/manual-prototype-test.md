@@ -1,9 +1,10 @@
 # Manual prototype test
 
-**Current build: actor-tick prototype 2.** Replace the earlier prototype before
+**Current build: prototype 3 (D-pad Left).** Replace the earlier prototype before
 retesting. Both the Lua files and all three cooked files changed; updating only
-Lua leaves an incompatible `ModActor`. This revision is a freeze mitigation,
-not a confirmed fix or stable release.
+Lua leaves an incompatible input actor, which the new code refuses to enable.
+This revision removes the suspected LB path; it is not a confirmed freeze fix
+or stable release. You perform all game/controller tests yourself.
 
 This development build tests input, owned network actors and the existing
 bathroom stat. It has no rendered stream, stains, water effects, animations,
@@ -12,9 +13,11 @@ not the expected result of this first test. No multiplayer acceptance has passed
 
 ## Prepare
 
-1. Close Abiotic Factor before updating files. Extract `PissingFactor-1.0.0-dev.zip`
+1. Close Abiotic Factor before updating files. Extract `PissingFactor-1.0.0-prototype-3.zip`
    into `steamapps/common/AbioticFactor`, following [installation](installation.md).
-   Keep the `.pak`, `.utoc` and `.ucas` files together.
+   Replace the Lua files and keep the `.pak`, `.utoc` and `.ucas` files together.
+   The build tool's `PissingFactor-1.0.0-dev.zip` is also valid when its startup
+   message and source commit match this revision.
 2. Open the installed `AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/config.lua`.
    Set `EnablePrototype = true` and `Debug = true`. The ZIP ships with both false.
    These settings take effect after restarting the game.
@@ -28,7 +31,7 @@ not the expected result of this first test. No multiplayer acceptance has passed
 ## First test: stability and visible status
 
 1. Enter normal gameplay in the disposable world. The startup log should include
-   `actor-tick prototype 2` and `Actor-tick prototype 2 ready`. If it only says
+   `prototype 3 (D-pad Left)` and `Prototype 3 ready`. If it only says
    `Waiting for BPModLoaderMod`, send that log before testing the ability.
 2. **Tap and release F6 once.** The mod should show a local status message in the
    game's text-message area, and write one diagnostic snapshot to `UE4SS.log`.
@@ -36,7 +39,14 @@ not the expected result of this first test. No multiplayer acceptance has passed
 3. `Continence 75/75` (or any equal current/maximum pair) means there is no
    bathroom need yet. This is a valid diagnostic result; you do not need to wait
    for need to build for this stability test.
-4. Play normally for five minutes without holding P, then tap F6 once more.
+4. Tap **LB/L1 alone**, then release, several times. Inventory cycling should
+   work normally without a freeze. No modifier is needed for the mod anymore.
+   If this freezes, stop here and preserve the log before restarting.
+5. Hold **D-pad Left alone** briefly, then release it. With bathroom need available,
+   continence should rise during the hold and stop on release. At maximum continence
+   there is no bathroom need, so this part checks stability only. No rendered stream
+   is expected yet. D-pad Left's ordinary gameplay action is consumed by the mod.
+6. Play normally for five minutes, then tap F6 once more.
    Report whether both status messages appeared and whether the game stayed
    responsive. Only continue with relief tests after this passes.
 
@@ -62,6 +72,8 @@ same world stays responsive with gameplay disabled.
 5. Hold P until fully relieved, then keep holding briefly. It should stop at
    maximum and require release before another press can start it. Eight seconds
    is the default for the entire maximum need, so partial need takes less time.
+   Your previous snapshot was 63/75, which would take about 1.3 seconds to fill;
+   use a short hold for a partial-relief test at that level.
 
 Expected initial diagnostics in single-player are `Local input actor: true`,
 `enabled: true`, one authority session, and `ready=true`. If these are missing,
@@ -77,12 +89,12 @@ After the first keyboard test succeeds:
   should not resume it. Release P and press it again to restart.
 - Switch focus away from the game during a hold. Relief should stop; returning
   to the game should require a fresh press.
-- With a controller, hold **LB/L1 first**, then **D-pad Down**. Releasing either
-  should stop relief. Using this chord must not drop an item or change hotbar slots.
-- Tap LB/L1 alone: its ordinary hotbar action should happen once on release.
-  D-pad Down alone retains the ordinary drop action, so use an expendable item
-  if testing that separately. Disconnect the controller during the pee chord
-  and verify that relief stops.
+- Repeat the relief and interruption tests with **D-pad Left alone**. Release
+  should stop relief, without dropping an item or changing hotbar slots.
+- Open a menu and check D-pad navigation. Close it and verify that a held action
+  does not resume until released and pressed again.
+- Disconnect the controller while holding D-pad Left and verify that relief stops.
+  LB/L1 and D-pad Down now remain entirely with the game's native input handling.
 
 Record your controller model and whether Steam Input is enabled. Rebinding and
 settings-panel navigation are deferred until that UI is implemented.

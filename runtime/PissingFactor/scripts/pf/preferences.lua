@@ -1,12 +1,12 @@
 local Preferences={}
-Preferences.defaults={Keyboard="P",Modifier="Gamepad_LeftShoulder",Action="Gamepad_DPad_Down",
+Preferences.defaults={Keyboard="P",Action="Gamepad_DPad_Left",
     Settings="F8",SoundVolume=0.65,StreamEffects=true,SurfaceStains=true,WaterEffects=true}
 
 function Preferences.validate(source,validKey)
     local out,warnings={},{}
     source=type(source)=="table" and source or {}
     for k,v in pairs(Preferences.defaults) do out[k]=v end
-    for _,name in ipairs({"Keyboard","Modifier","Action","Settings"}) do
+    for _,name in ipairs({"Keyboard","Action","Settings"}) do
         local value=source[name]
         if value~=nil then
             if type(value)=="string" and #value<=64 and value:match("^[%w_]+$")
@@ -15,10 +15,10 @@ function Preferences.validate(source,validKey)
         end
     end
     local seen={}
-    for _,name in ipairs({"Keyboard","Modifier","Action","Settings"}) do
+    for _,name in ipairs({"Keyboard","Action","Settings"}) do
         if seen[out[name]] then
             warnings[#warnings+1]="Duplicate bindings; restoring defaults"
-            for _,key in ipairs({"Keyboard","Modifier","Action","Settings"}) do out[key]=Preferences.defaults[key] end
+            for _,key in ipairs({"Keyboard","Action","Settings"}) do out[key]=Preferences.defaults[key] end
             break
         end
         seen[out[name]]=true

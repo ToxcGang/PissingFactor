@@ -31,8 +31,17 @@ Missing checks are **unverified**, not passed.
 - Actor-tick prototype 2 replaces the overlapping update/diagnostic queues.
   Its authoring commandlet compiles with zero errors/warnings, and offline
   bootstrap checks cover throttling, diagnostic edges, cleanup and old-asset
-  rejection. Its in-game stability, local message display and relief remain
-  pending the user's manual retest. No automated desktop/game testing is used.
+  rejection. A subsequent user-run session reached ready input and an idle
+  authority session at continence 63/75 (F6, 2026-09-11 21:54:44 local). The user
+  reported another freeze and identified pressing LB as the trigger. No error
+  follows that snapshot in the available loader log. Prototype 2 therefore
+  **failed stability**; relief and visible status are still unverified.
+- Prototype 3 removes LB interception, native input-action replay and Lua hooks
+  on input events. It consumes only P and D-pad Left, checked in the compiled
+  Blueprint; input state is read at 10 Hz. Offline regression checks cover the
+  real Lua client with mocked engine objects, including hold/release, interruption,
+  stale key state and rejection of old input assets. In-game stability and relief
+  await the user's manual test. No automated desktop/game testing is used.
 
 ## Required gameplay scenarios
 
@@ -40,7 +49,7 @@ Missing checks are **unverified**, not passed.
 | --- | --- | --- |
 | singleplayer | Hold P, partial relief, release, empty | Existing meter updates correctly; no relief while stopped; fresh press required |
 | emergency | Start during bathroom emergency | Existing emergency behavior resolves correctly without toilet rewards |
-| controller | Keyboard/controller hold, rebound keys, chord, device disconnect | No unwanted drops/hotbar changes; UI fully navigable; release stops |
+| controller | P/D-pad Left hold, rebound keys, ordinary LB cycling, device disconnect | No unwanted drops/hotbar changes; UI fully navigable; release stops |
 | interruptions | Attack, sprint, interaction, menus, focus loss, death, respawn | Action and sounds stop; equipment and animations restore; no automatic restart |
 | surfaces | Floors, walls, moving doors/props, thin obstructions | First-hit collision and correctly attached fading stains |
 | water | Shoreline, shallow/deep water, aiming over water | Water cloud/ripples; no erroneous submerged-floor stain |

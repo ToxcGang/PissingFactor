@@ -10,9 +10,13 @@ local function key(name) return {KeyName=FName(name)} end
 function Client.new(transport,player,controller,actor)
     local capture=transport.world:SpawnActor(transport.inputClass,{X=0,Y=0,Z=0},{Pitch=0,Yaw=0,Roll=0})
     assert(Game.valid(capture),"Input actor spawn failed")
+    if Game.read(capture,"PFInputRevision")~=3 then
+        transport:destroy(capture)
+        error("Old input assets: install all three cooked files from prototype 3 before enabling input")
+    end
     capture:SetOwner(controller)
     return setmetatable({transport=transport,player=player,controller=controller,actor=actor,
-        capture=capture,input=Input.new(),sequence=0,lastHeld=nil,enabled=false,menuHeld=false},Client)
+        capture=capture,input=Input.new(),sequence=0,lastHeld=nil,enabled=false},Client)
 end
 
 function Client:send(held,reliable)
@@ -28,7 +32,7 @@ function Client:send(held,reliable)
     self.lastHeld=held
 end
 
-function Client:update(heartbeat)
+function Client:update()
     if not Game.valid(self.capture) or not Game.valid(self.actor) then return false end
     local version=self.actor.PFVersion:ToString()
     if version~=Version.mod or self.actor.PFProtocol~=Version.protocol then
@@ -46,26 +50,10 @@ function Client:update(heartbeat)
     local function held(field,name)
         return self.capture[field] and self.controller:IsInputKeyDown(key(name))
     end
-    local keys={keyboard=held("PFKeyboard","P"),bumper=held("PFBumper","Gamepad_LeftShoulder"),
-        down=held("PFDown","Gamepad_DPad_Down")}
-    local menu=held("PFMenu","Gamepad_Special_Right")
-    if menu and not self.menuHeld and enabled then
-        if keys.bumper then
-            self.input:cancel()
-            Log.once("settings_pending","Settings UI is not available in the transport prototype")
-        else
-            self.player:GetController():InpActEvt_EscapeMenu_K2Node_InputActionEvent_23(key("Gamepad_Special_Right"))
-        end
-        enabled=false
-    end
-    self.menuHeld=menu
+    local keys={keyboard=held("PFKeyboard","P"),controller=held("PFLeft","Gamepad_DPad_Left")}
     local actions=self.input:update(keys,enabled)
-    if actions.previousHotbar then
-        self.player:InpActEvt_PreviousHotbarItem_K2Node_InputActionEvent_8(key("Gamepad_LeftShoulder"))
-    end
-    if actions.drop then self.player:InpActEvt_DropItem_K2Node_InputActionEvent_11(key("Gamepad_DPad_Down")) end
     if actions.held~=self.lastHeld then self:send(actions.held,true)
-    elseif heartbeat and actions.held then self:send(true,false) end
+    elseif actions.held then self:send(true,false) end
     return true
 end
 

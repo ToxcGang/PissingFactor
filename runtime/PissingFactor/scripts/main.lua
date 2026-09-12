@@ -13,7 +13,7 @@ local Pump=require("pf.pump")
 local configSource=dofile(directory.."../config.lua")
 local config,warnings=Config.validate(configSource)
 for _,warning in ipairs(warnings) do Log.info(warning) end
-Log.info("Loading "..Version.mod..", protocol "..Version.protocol..", actor-tick prototype 2")
+Log.info("Loading "..Version.mod..", protocol "..Version.protocol..", prototype 3 (D-pad Left)")
 
 if configSource.EnablePrototype~=true then
     Log.info("Development build: gameplay disabled. EnablePrototype is only for disposable-world integration testing.")
@@ -53,7 +53,7 @@ local function reset()
 end
 
 local function diagnostics()
-    Log.info("Diagnostic snapshot "..Version.mod.." / protocol "..Version.protocol.." / actor-tick prototype 2")
+    Log.info("Diagnostic snapshot "..Version.mod.." / protocol "..Version.protocol.." / prototype 3 (D-pad Left)")
     Log.info("Local input actor: "..tostring(client~=nil).."; enabled: "..tostring(client and client.enabled))
     local count=0
     if server then
@@ -72,7 +72,7 @@ local function diagnostics()
     if client and Game.valid(client.player) and Game.valid(client.actor) then
         local current,maximum=client.player.CurrentContinence,client.player.MaxContinence
         local reason=stringValue(client.actor.PFReason)
-        local empty=current>=maximum and " No bathroom need yet." or " Hold P to test relief."
+        local empty=current>=maximum and " No bathroom need yet." or " Hold P or D-pad Left to test relief."
         message=string.format("Continence %.1f/%.1f; input %s; %s.%s",current,maximum,
             client.enabled and "enabled" or "blocked",reason,empty)
     end
@@ -118,13 +118,13 @@ local function tick(now,dt)
         for _,actor in ipairs(FindAllOf("BP_PFPlayer_C") or {}) do
             if transport:ownedBy(actor,player) then
                 client=Client.new(transport,player,controller,actor)
-                Log.info("Local input attached. Tap F6 for status; hold P for relief when needed.")
+                Log.info("Local input attached. Tap F6 for status; hold P or D-pad Left for relief when needed.")
                 Game.showStatus(controller,"Prototype input attached. Tap F6 for status (local message and log).")
                 break
             end
         end
     end
-    if client and not client:update(true) then client=nil end
+    if client and not client:update() then client=nil end
     server:tick(now,dt)
 end
 
@@ -157,7 +157,7 @@ local function initialize(actor)
     local installed=stringValue(instance.PlayerVersionString)
     assert(installed==Version.game,"Unsupported game version: "..installed.."; expected "..Version.game)
     assert(Game.read(actor,"PFHeartbeatSeen")~=nil,
-        "Old ModActor assets: install all three cooked files from actor-tick prototype 2")
+        "Old ModActor assets: install all three cooked files from prototype 3")
     world=actor:GetWorld()
     transport=Transport.new(world,config)
     driver=actor
@@ -166,25 +166,10 @@ local function initialize(actor)
     local path="/Game/Mods/PissingFactor/BP_PFPlayer.BP_PFPlayer_C:"
     register(path.."ServerSetInput",rpc)
     register(path.."ServerUpdateAim",rpc)
-    transport.inputClass.DynamicBindingObjects:ForEach(function(_,binding)
-        local object=binding:get()
-        if object:IsA("/Script/Engine.InputKeyDelegateBinding") then
-            object.InputKeyDelegateBindings:ForEach(function(_,entry)
-                local name=entry:get().FunctionNameToBind:ToString()
-                register("/Game/Mods/PissingFactor/BP_PFInput.BP_PFInput_C:"..name,function(context)
-                    if not failed and client and Game.same(client.capture,context:get()) then
-                        local ok,err=pcall(function()client:update(false)end)
-                        if not ok then
-                            Log.once("input_error",err)
-                            pcall(function()client:close()end);client=nil
-                        end
-                    end
-                end)
-            end)
-        end
-    end)
+    -- Blueprint events only store key state. Read it on the 10 Hz actor tick;
+    -- do not reenter Lua or dispatch native gameplay actions from input events.
     register(driverPath..":ReceiveTick",heartbeat)
-    Log.info("Actor-tick prototype 2 ready; no async update/F6 queues. Tap F6 for local status.")
+    Log.info("Prototype 3 ready; hold P or D-pad Left. No LB capture or input-event Lua hooks. Tap F6 for local status.")
 end
 
 -- BPModLoaderMod creates ModActor in each world. Both callbacks below already

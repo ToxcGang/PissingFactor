@@ -191,13 +191,11 @@ static void SetConstant(UBlueprint* BP, FName Name, UEdGraphPin* Exec, const FSt
 static void InputActor()
 {
     UBlueprint* BP = Actor(TEXT("BP_PFInput"), false);
+    Variable(BP, TEXT("PFInputRevision"), Type(UEdGraphSchema_K2::PC_Int), TEXT("3"), false);
     struct Binding { FName Name; FKey Key; };
     const TArray<Binding> Bindings = {
         {TEXT("PFKeyboard"), EKeys::P},
-        {TEXT("PFBumper"), EKeys::Gamepad_LeftShoulder},
-        {TEXT("PFDown"), EKeys::Gamepad_DPad_Down},
-        {TEXT("PFSettings"), EKeys::F8},
-        {TEXT("PFMenu"), EKeys::Gamepad_Special_Right}
+        {TEXT("PFLeft"), EKeys::Gamepad_DPad_Left}
     };
     for (const Binding& Binding : Bindings)
     {
@@ -213,6 +211,24 @@ static void InputActor()
     }
     FKismetEditorUtilities::CompileBlueprint(BP);
     check(BP->Status != BS_Error);
+    // Inspect compiled bindings as well as graph nodes: only P/Left may consume
+    // input. Inventory cycling, dropping and menu actions stay with the game.
+    int32 EventCount = 0;
+    for (UDynamicBlueprintBinding* Dynamic : CastChecked<UBlueprintGeneratedClass>(BP->GeneratedClass)->DynamicBindingObjects)
+    {
+        if (const UInputKeyDelegateBinding* Keys = Cast<UInputKeyDelegateBinding>(Dynamic))
+        {
+            for (const FBlueprintInputKeyDelegateBinding& Entry : Keys->InputKeyDelegateBindings)
+            {
+                check(Entry.InputChord.Key == EKeys::P || Entry.InputChord.Key == EKeys::Gamepad_DPad_Left);
+                check(Entry.bConsumeInput && !Entry.bExecuteWhenPaused);
+                check(Entry.InputKeyEvent == IE_Pressed || Entry.InputKeyEvent == IE_Released);
+                ++EventCount;
+            }
+        }
+    }
+    check(EventCount == 4);
+    UE_LOG(LogTemp, Display, TEXT("PissingFactor: input revision 3 verified: P and D-pad Left only, four key events"));
     AActor* CDO = CastChecked<AActor>(BP->GeneratedClass->GetDefaultObject());
     CDO->InputPriority = 100;
     CDO->bBlockInput = false; // only consumed keys; walking and aiming still work

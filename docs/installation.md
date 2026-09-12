@@ -50,10 +50,13 @@ An editor installation is not required to play a cooked release.
 
 ## Controls and tuning
 
-Hold P on keyboard. On controller, hold LB/L1 **before** pressing D-pad Down;
-release either to stop. A bumper tap keeps its ordinary hotbar action on release.
-The shortcut must never drop an item. Controls and audiovisual preferences are
-local; the host's `config.lua` controls relief rate, range, and effect lifetimes.
+Hold P on keyboard, or hold **D-pad Left alone** on controller. Release to stop.
+The mod does not capture LB/L1, D-pad Down or the controller menu button. LB/L1
+keeps the game's ordinary inventory cycling. In gameplay, D-pad Left is consumed
+by the mod; its ordinary action is unavailable while mod input is enabled.
+Menus retain the game's navigation. The current prototype has fixed bindings;
+local rebinding and audiovisual preferences await the settings UI. The host's
+`config.lua` controls relief rate, range, and effect lifetimes.
 
 ## Removal
 

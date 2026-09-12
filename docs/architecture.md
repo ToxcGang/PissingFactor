@@ -38,11 +38,16 @@ per world, evicting the oldest first. Effects never enter game saves.
 
 ## Input
 
-The controller shortcut requires the bumper first. The input layer must consume
-the ordinary gameplay bindings before they run. Polling key state alone cannot
-prevent item drops. A solo bumper action is deferred until release, then replayed
-once only if no chord occurred. Menus retain native navigation. Opening a menu
-or losing focus cancels any queued action and requires releasing held inputs.
+Hold P or D-pad Left alone. The input Blueprint consumes just those two keys in
+gameplay and stores their pressed/released state. Lua reads that state together
+with the engine's current key state on the 10 Hz actor tick, so focus flushing
+can stop a stale Blueprint hold. No Lua hooks run inside the input events.
+
+LB/L1, D-pad Down, F8 and the controller menu button are not captured. No native
+inventory, drop or menu action is deferred or replayed. Opening a menu disables
+capture and cancels the hold; an interruption requires release before restarting.
+Menus retain native navigation. Input asset revision 3 is checked before input
+is enabled, preventing an older cooked Blueprint from consuming the old chord.
 
 ## Compatibility boundary
 

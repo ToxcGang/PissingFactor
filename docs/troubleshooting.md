@@ -15,6 +15,12 @@ the simulation; F6 is read on that same thread, limited to one snapshot per pres
 It also attempts a local in-game status message. Idle input RPCs and redundant
 idle actor updates are suppressed. This does not repair other mods or UE4SS itself.
 
+The user subsequently reported prototype 2 freezing when pressing LB. Its last
+F6 snapshot showed ready input and continence 63/75; the latest loader log has
+no exception after that snapshot. Prototype 3 removes the LB interception and
+native action replay, binds D-pad Left alone, and removes the Lua input-event
+hooks. This removes the suspected path, but is not a confirmed freeze fix.
+
 Install all files from the new prototype and follow the
 [stability-first manual test](manual-prototype-test.md). Preserve the final
 unfiltered log lines if it freezes: the loader error is outside the PissingFactor
@@ -36,8 +42,10 @@ does not demonstrate successful authoritative relief.
 ## Shortcut drops items or changes hotbar slots
 
 Stop testing the ability and report the input bindings and controller model.
-The controller interception check is a release requirement. Press the modifier
-before D-pad Down. When using Steam Input, check whether the controller is
+The controller interception check is a release requirement. Use D-pad Left
+alone. The mod must leave LB/L1 inventory cycling with the game. Confirm startup
+logs say `prototype 3 (D-pad Left)` and replace all three cooked files as well
+as Lua when updating. When using Steam Input, check whether the controller is
 being translated into keyboard presses and avoid mapping the same button twice.
 
 ## Game update or loader instability
