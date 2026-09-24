@@ -15,8 +15,9 @@ Record exact builds in an acceptance file described in [building](building.md).
 
 Begin the final multiplayer stage with ownership and continence checks before
 assessing the complete visual package across clients. The current opt-in
-prototype has no verified water collision, animations, effect rendering or
-settings panel; continue implementing those before requesting these tests. Enable
+prototype has stream/stain rendering awaiting a local manual check; exact water
+collision, animations, water effects, in-game audio and the settings panel remain
+unfinished. Continue implementing those before requesting these tests. Enable
 `EnablePrototype = true` in each installed `config.lua` for this test only.
 The source default remains false. A prototype build cannot be released as 1.0.0.
 

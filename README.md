@@ -24,16 +24,21 @@ UE4SS. Controller support means controllers on PC, not installation on consoles.
 ## Development status
 
 The repository contains the implementation in progress, tests, and build tools.
-The current milestone is an opt-in transport/continence prototype: the editor
-plugin generates replicated actors, consumed key bindings, and material assets.
+The current milestone is prototype 4: an opt-in visible stream and solid-surface
+stain build. The editor plugin generates the original curved-stream mesh,
+presentation Blueprint, replicated actors, consumed key bindings and materials.
 Prototype 3 uses D-pad Left alone, removes LB interception and native action
 replay, and reads input on the actor tick without Lua input-event hooks. A manual
 local test confirmed ordinary LB cycling without a freeze, D-pad Left bathroom
 relief and stopping on release. The authority log records continence rising from
 63 to 75. Interrupted actions, longer sessions and remote-client behavior still
 need testing; follow the [manual procedure](docs/manual-prototype-test.md).
-Animations, water collision, presentation, rebinding UI and multiplayer acceptance
-are unfinished. `EnablePrototype` defaults to false so a source installation
+Prototype 4 adds authoritative arc traces, locally rendered interpolated streams,
+attached decals, 60-second stain lifetimes and a final ten-second fade. These new
+visuals await the owner's manual test. Known liquid-volume bounds conservatively
+suppress stains; exact water surfaces, water effects, animations, in-game audio,
+rebinding UI and multiplayer acceptance are unfinished. `EnablePrototype` defaults
+to false so a source installation
 does not change gameplay silently.
 The [development order](docs/development-plan.md) puts the remaining features
 and single-player checks first, with multiplayer testing as the final acceptance

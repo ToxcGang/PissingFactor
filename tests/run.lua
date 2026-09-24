@@ -4,6 +4,7 @@ local Input = require("pf.input")
 local Effects = require("pf.effects")
 local Trajectory = require("pf.trajectory")
 local Pump = require("pf.pump")
+local Bounds = require("pf.bounds")
 local total, failures = 0, {}
 local function equal(actual, expected)
     assert(actual == expected, tostring(actual) .. " ~= " .. tostring(expected))
@@ -215,6 +216,32 @@ test("first water hit prevents staining the submerged floor", function()
     equal(r.hit.kind,"water");equal(#r.points,2)
 end)
 
+test("collision time clips the displayed arc at a partial segment", function()
+    local r=Trajectory.trace({X=0,Y=0,Z=100},aim,400,function(a,b)
+        return {kind="solid",position={X=(a.X+b.X)/2,Y=0,Z=(a.Z+b.Z)/2}}
+    end)
+    near(r.duration,0.02)
+    local a,b=Trajectory.tangents(aim,r.duration)
+    near(a.X,11);near(b.X,11);near(b.Z,-980*0.02^2)
+end)
+test("range clipping preserves bounded duration and path length", function()
+    local r=Trajectory.trace({X=0,Y=0,Z=0},aim,10,function()end)
+    assert(r.duration>0 and r.duration<0.04)
+    near(math.sqrt(r.endpoint.X^2+r.endpoint.Z^2),10)
+end)
+test("water bounds handle entry, starting inside, parallel misses and reversed travel", function()
+    local c,e={X=0,Y=0,Z=0},{X=1,Y=1,Z=1}
+    near(Bounds.entry({X=-2,Y=0,Z=0},{X=2,Y=0,Z=0},c,e),0.25)
+    near(Bounds.entry({X=2,Y=0,Z=0},{X=-2,Y=0,Z=0},c,e),0.25)
+    equal(Bounds.entry(c,{X=3,Y=0,Z=0},c,e),0)
+    equal(Bounds.entry({X=-2,Y=2,Z=0},{X=2,Y=2,Z=0},c,e),nil)
+end)
+test("unverified water cannot stamp a stain", function()
+    local e=Effects.new(Config.validate({}))
+    equal(e:stamp("a",{kind="unverified_water",position=hit.position},0),nil)
+    equal(#e.records,0)
+end)
+
 test("a hold begun inside a menu requires release after leaving it", function()
     local i = Input.new()
     equal(i:update({keyboard=true},false).held,false)
@@ -270,6 +297,29 @@ test("server awards relief only after an owned compatible request",function()
     s:tick(0,0.1); near(p.current,0)
     assert(s:receive("one",a,message(),0.1))
     s:tick(0.1,0.1); near(p.current,1.25); equal(n.states[a].active,true)
+end)
+test("cosmetic collision failure does not disable authoritative relief",function()
+    local s,p,a,n=fixture()
+    n.trace=function()error("unsupported collision binding")end
+    s:receive("one",a,message(),0);s:tick(0,0.1)
+    near(p.current,1.25);equal(n.states[a].active,true);equal(next(n.impacts),nil)
+    s:receive("one",a,message(2),0.1);s:tick(0.1,0.1)
+    near(p.current,2.5)
+end)
+test("server evicts impact actors before publishing at the world cap",function()
+    local s,p,a,n=fixture();s.config.MaxStains=2
+    local peak=0
+    function n:publishImpact(r)
+        self.impacts[r.id]=r
+        local count=0;for _ in pairs(self.impacts) do count=count+1 end
+        peak=math.max(peak,count)
+    end
+    for i=1,4 do
+        local pawn=player();local actor={owner=pawn}
+        s:add(tostring(i),pawn,actor);s:receive(tostring(i),actor,message(),0)
+    end
+    s:tick(0,0.1)
+    equal(peak,2);equal(#s.effects.records,2)
 end)
 test("duplicate simulation dispatch cannot award twice",function()
     local s,p,a=fixture(); s:receive("one",a,message(),0)

@@ -61,6 +61,14 @@ This changes scheduling only; all release gates below remain required.
 
 ## Required gameplay scenarios
 
+Prototype 4 adds the original spline stream and solid-surface stains. Offline
+tests cover collision ordering, conservative water exclusion, arc duration,
+presentation expiry/fade, moving-surface references, allocation caps and cleanup.
+Unreal generation checks the Blueprint graphs and original mesh. These checks
+are not evidence of in-game visual quality or correct physical surfaces; the
+owner's prototype 4 manual run is still pending. Prototype 3's recorded success
+does not transfer automatically to the new build.
+
 | ID | Scenario | Acceptance |
 | --- | --- | --- |
 | singleplayer | Hold P, partial relief, release, empty | Existing meter updates correctly; no relief while stopped; fresh press required |

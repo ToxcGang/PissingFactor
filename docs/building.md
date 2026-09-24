@@ -35,8 +35,9 @@ documentation links, and packaging rules. They do not simulate Unreal RPCs.
    plugin and invokes `PFBuild` to generate editable assets.
 4. Review the generated assets under `Content/Mods/PissingFactor` in the editor.
    Complete and verify the input, UI, animations, and effects against the game.
-   The generator currently creates the actor RPC definitions, key capture and four materials;
-   the asset manifest deliberately requires the unfinished resources too.
+   The generator currently creates actor RPC definitions, key capture, an original
+   stream mesh, its interpolating presentation Blueprint and four materials.
+   The full-release asset manifest deliberately requires unfinished resources too.
 5. Commit reviewed original assets, then run the same command with `--stage cook`.
    Only the mod's namespace is packed. No engine, editor, or game assets are copied.
    The cooker uses Unreal's single-package mode to omit default maps, unrelated
@@ -55,7 +56,9 @@ For incomplete development builds, append `--prototype` to the cook command.
 This creates a build explicitly marked as a prototype; release packaging rejects
 it even if someone supplies acceptance evidence. Enable `EnablePrototype` only
 in the installed development configuration of a disposable test world. This
-mode has no completed animations, collision/water effects, or settings panel.
+mode includes prototype solid collision and stream/stain rendering; it still has
+no completed animations, water effects, in-game audio or settings panel. The
+manifest's `prototypeCookedAssets` lists every asset required for this prototype.
 
 ## Private compatibility probe
 

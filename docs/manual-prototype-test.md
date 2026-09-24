@@ -1,19 +1,20 @@
 # Manual prototype test
 
-**Current build: prototype 3 (D-pad Left).** Replace the earlier prototype before
+**Current build: prototype 4 (stream and stains).** Replace the earlier prototype before
 retesting. Both the Lua files and all three cooked files changed; updating only
-Lua leaves an incompatible input actor, which the new code refuses to enable.
-This revision removes the suspected LB path; it is not a confirmed freeze fix
-or stable release. You perform all game/controller tests yourself.
+Lua leaves incompatible network/driver assets, which the new code rejects.
+P and D-pad Left retain the prototype 3 controls. You perform all game/controller
+tests yourself; this is not a stable release.
 
-This development build tests input, owned network actors and the existing
-bathroom stat. It has no rendered stream, stains, water effects, animations,
-in-game audio or settings/rebinding panel yet. Those are unfinished features,
-not the expected result of this first test. No multiplayer acceptance has passed.
+This build adds a visible arcing stream and fading solid-surface stains to the
+existing bathroom relief. Water effects, animations, in-game audio and settings/
+rebinding are unfinished. Test walls and floors away from water first. Known
+liquid-volume bounds suppress stains conservatively, but do not establish exact
+water surfaces. Multiplayer acceptance remains scheduled last.
 
 ## Prepare
 
-1. Close Abiotic Factor before updating files. Extract `PissingFactor-1.0.0-prototype-3.zip`
+1. Close Abiotic Factor before updating files. Extract `PissingFactor-1.0.0-prototype-4.zip`
    into `steamapps/common/AbioticFactor`, following [installation](installation.md).
    Replace the Lua files and keep the `.pak`, `.utoc` and `.ucas` files together.
    The build tool's `PissingFactor-1.0.0-dev.zip` is also valid when its startup
@@ -31,7 +32,7 @@ not the expected result of this first test. No multiplayer acceptance has passed
 ## First test: stability and visible status
 
 1. Enter normal gameplay in the disposable world. The startup log should include
-   `prototype 3 (D-pad Left)` and `Prototype 3 ready`. If it only says
+   `prototype 4 (stream and stains)` and `Prototype 4 ready`. If it only says
    `Waiting for BPModLoaderMod`, send that log before testing the ability.
 2. **Tap and release F6 once.** The mod should show a local status message in the
    game's text-message area, and write one diagnostic snapshot to `UE4SS.log`.
@@ -44,8 +45,9 @@ not the expected result of this first test. No multiplayer acceptance has passed
    If this freezes, stop here and preserve the log before restarting.
 5. Hold **D-pad Left alone** briefly, then release it. With bathroom need available,
    continence should rise during the hold and stop on release. At maximum continence
-   there is no bathroom need, so this part checks stability only. No rendered stream
-   is expected yet. D-pad Left's ordinary gameplay action is consumed by the mod.
+   there is no bathroom need, so no stream or new stain should appear. With need
+   available, the visual stream should accompany relief. D-pad Left's ordinary
+   gameplay action is consumed by the mod.
 6. Play normally for five minutes, then tap F6 once more.
    Report whether both status messages appeared and whether the game stayed
    responsive. Only continue with relief tests after this passes.
@@ -80,6 +82,33 @@ Expected initial diagnostics in single-player are `Local input actor: true`,
 or the first hold has no effect despite available need, stop at this point and
 report the logs before running the rest of the checklist.
 
+## Stream and surface stains
+
+1. With bathroom need available, stand about one metre from a plain wall in a
+   dry room. Hold P or D-pad Left and aim at the wall, then slightly down toward
+   the floor. Expect a narrow yellow curved stream that stops at the first solid
+   surface. Walking and aiming should move it. Look down enough to see the
+   waist-height origin; custom hand/body animations are not present yet.
+2. Release the button. The stream should disappear promptly; the yellow impact
+   stain should remain. Tap F6: the log includes presentation status and local
+   stream/stain counts. Releasing should leave zero active stream visuals.
+3. Time one isolated group of stains from the last impact. It should stay visible
+   for roughly 50 seconds, fade during the final ten seconds, and be gone at
+   about 60 seconds. Additional impacts at the same spot create younger stains.
+4. If available, hit a movable door or prop, then move it. The stain should follow
+   the surface. It must not destroy the prop when fading. Some surfaces may have
+   decal reception disabled by the game; report those separately.
+5. Check a nearby obstruction and straight-down aiming. The stream should not
+   continue behind the obstruction or stay visible after the action ends.
+6. Return to the main menu, then reload the disposable world. Old streams and
+   stains should be gone. Check for duplicate effects on the next use.
+
+Send the first `Environmental effects disabled`, `Presentation unavailable` or
+`Presentation disabled` log line if relief works but visuals do not. These paths
+disable affected cosmetics without intentionally disabling bathroom relief.
+Exact water boundaries and water effects are deferred; do not treat dry-surface
+success as passing the water acceptance gate.
+
 ## Interruptions and controller
 
 After the first keyboard test succeeds:
@@ -108,6 +137,8 @@ the first error if present. Include:
 
 - Keyboard or controller, plus the controller model/Steam Input setting.
 - What the bathroom meter did during the hold and after release.
+- Whether the stream appeared, stopped at surfaces and vanished on release;
+  whether stains attached, faded and disappeared, including the approximate times.
 - Which step failed, or which steps behaved as expected.
 - `sourceCommit` from the ZIP's `package-manifest.json` if you updated the package.
 

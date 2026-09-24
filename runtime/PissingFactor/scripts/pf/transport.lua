@@ -4,6 +4,7 @@ local Game = require("pf.game")
 local Version = require("pf.version")
 local Log = require("pf.log")
 local UE = require("UEHelpers")
+local Collision = require("pf.collision")
 local Transport = {}
 Transport.__index = Transport
 local root = "/Game/Mods/PissingFactor/"
@@ -22,6 +23,7 @@ end
 
 function Transport.new(world, config)
     return setmetatable({world=world,config=config,impacts={},states={},
+        collision=Collision.new(world),
         playerClass=asset("BP_PFPlayer"),impactClass=asset("BP_PFImpact"),
         inputClass=asset("BP_PFInput")},Transport)
 end
@@ -42,6 +44,10 @@ function Transport:spawnPlayer(player)
     assert(Game.valid(controller), "Player has no controller")
     local actor=self.world:SpawnActor(self.playerClass,player:K2_GetActorLocation(),rotation)
     assert(Game.valid(actor), "Cannot spawn BP_PFPlayer")
+    if Game.read(actor,"PFPresentationRevision")~=4 then
+        actor:K2_DestroyActor()
+        error("Old network assets: install all three cooked files from prototype 4")
+    end
     actor:SetOwner(controller)
     actor.PFPawn=player
     actor.PFVersion=Version.mod
@@ -66,10 +72,12 @@ function Transport:publishState(actor,session,path,now)
     local previous=self.states[actor]
     if not session.active and previous and not previous.active and previous.reason==session.reason then return end
     actor.PFActive=session.active
+    actor.PFHasPath=path~=nil and path.duration>0.0001
     actor.PFReason=session.reason
     actor.PFAim=session.aim
     actor.PFServerTime=self:worldTime()
     if path then
+        actor.PFDuration=path.duration
         actor.PFOrigin=path.points[1]
         actor.PFEndpoint=path.endpoint
         actor:K2_SetActorLocation(path.points[1],false,{},true)
@@ -85,11 +93,8 @@ function Transport:stop(actor,reason)
     end
 end
 
-function Transport:trace(player,a,b)
-    -- Collision must be enabled by the verified compatibility profile. A generic
-    -- visibility trace can pass through this game's water and stain its floor.
-    if not self.traceAdapter then return nil end
-    return self.traceAdapter(player,a,b)
+function Transport:trace(player,a,b,now)
+    return self.collision:trace(player,a,b,now)
 end
 
 function Transport:publishImpact(record)
@@ -103,6 +108,8 @@ function Transport:publishImpact(record)
     actor.PFExpires=self:worldTime()+remaining
     actor.PFFade=record.fade
     actor.PFLocalPosition=record.localPosition or zero
+    actor.PFLocalNormal=record.localNormal or record.normal or {X=0,Y=0,Z=1}
+    actor.PFAttached=Game.valid(record.component)
     if Game.valid(record.component) then actor.PFSurface=record.component end
     actor:SetLifeSpan(math.max(0.01,remaining))
     actor:ForceNetUpdate()

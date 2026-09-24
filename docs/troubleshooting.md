@@ -41,12 +41,25 @@ The server must run the same complete mod and protocol version as all clients.
 Check server logs as well as the affected client's logs. A local visual alone
 does not demonstrate successful authoritative relief.
 
+## Relief works but the stream or stains are missing
+
+Install the entire prototype 4 package, including all three cooked containers.
+Confirm startup says `prototype 4 (stream and stains)`. When continence is already
+at maximum, no stream or fresh stain is expected. Look down toward a nearby wall
+or floor in a dry room while holding P or D-pad Left with need available.
+
+F6 records `Presentation enabled` and local visual counts. Report the first
+`Presentation unavailable`, `Presentation disabled` or `Environmental effects
+disabled` message. Cosmetic failures are isolated from bathroom relief.
+Surfaces can have decal reception disabled by the game. Known liquid-volume
+bounds suppress stains; water clouds/ripples are not implemented in this build.
+
 ## Shortcut drops items or changes hotbar slots
 
 Stop testing the ability and report the input bindings and controller model.
 The controller interception check is a release requirement. Use D-pad Left
 alone. The mod must leave LB/L1 inventory cycling with the game. Confirm startup
-logs say `prototype 3 (D-pad Left)` and replace all three cooked files as well
+logs say `prototype 4 (stream and stains)` and replace all three cooked files as well
 as Lua when updating. When using Steam Input, check whether the controller is
 being translated into keyboard presses and avoid mapping the same button twice.
 

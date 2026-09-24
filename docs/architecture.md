@@ -30,6 +30,21 @@ character's waist. The first water or solid hit wins. Solid impacts attach
 decals in the hit component's local coordinates where possible. Water produces
 short-lived clouds and ripples instead of stains on the floor beneath it.
 
+Prototype 4 implements solid tracing and stream/stain presentation. Until exact
+water surfaces are verified, bounds from known liquid interaction actors and
+water physics volumes act as conservative exclusions: they clip streams and
+prevent stamps rather than rendering water effects. This does not prove that
+every game water surface is covered.
+
+Clients deform an original tube mesh using spline tangents derived from the
+replicated aim, duration and clipped endpoint. A local Blueprint interpolates
+presentation each frame; simulation remains at 10 Hz. Shorter obstruction hits
+and large origin jumps snap to the new path. Decals use replicated component-local
+positions/normals and remaining server time; their material multiplies opacity
+by Unreal's decal lifetime fade. Late-discovered decals start at their remaining
+opacity. Rendering asset loads and cosmetic actors are skipped on dedicated
+servers. Cosmetic binding failures are isolated from continence updates.
+
 Replicated action/impact state carries server time and expiration, so late
 joiners see only the remaining lifetime. Each client creates cosmetic visuals
 locally; the dedicated server performs no rendering or audio work. Limit

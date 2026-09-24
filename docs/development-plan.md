@@ -27,9 +27,10 @@ other scenarios remain unverified until tested.
    simultaneous use, late joining, latency, disconnection and version mismatch.
    Resolve failures and repeat affected checks before publishing v1.0.0.
 
-The next development milestone is a visible arcing stream and temporary solid
-surface impacts. A second client is needed for step 4, not as a prerequisite
-for the remaining implementation.
+Prototype 4 implements the visible arcing stream and temporary solid-surface
+impacts for the owner's next manual test. Exact water-surface integration and
+water effects remain the next part of step 1. A second client is needed for
+step 4, not as a prerequisite for the remaining implementation.
 
 ## Constraints throughout development
 

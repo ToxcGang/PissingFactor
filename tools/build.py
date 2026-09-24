@@ -38,7 +38,7 @@ def build(engine, stage, prototype=False):
         require(content.is_dir(), "No cooked mod content was produced")
         manifest = read_json(ROOT / "assets/manifest.json")
         actual = {p.stem for p in content.glob("*.uasset")}
-        required = {"ModActor", "BP_PFPlayer", "BP_PFImpact", "BP_PFInput"} if prototype else set(manifest["requiredCookedAssets"])
+        required = set(manifest["prototypeCookedAssets"] if prototype else manifest["requiredCookedAssets"])
         require(required <= actual, "Cook is incomplete: " + ", ".join(sorted(required - actual)))
         output = ROOT / "build"
         output.mkdir(exist_ok=True)

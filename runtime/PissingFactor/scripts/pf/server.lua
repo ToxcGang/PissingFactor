@@ -58,12 +58,21 @@ function Server:tick(now, dt)
                 end
                 local path
                 if session.active then
-                    path = Trajectory.trace(self.game.origin(player), session.aim,
-                        self.config.RangeCm, function(a,b)
-                            return self.transport:trace(player,a,b)
-                        end)
-                    local stamp = self.effects:stamp(id,path.hit,now)
-                    if stamp then self.transport:publishImpact(stamp) end
+                    local visible,problem=pcall(function()
+                        path = Trajectory.trace(self.game.origin(player), session.aim,
+                            self.config.RangeCm, function(a,b)
+                                return self.transport:trace(player,a,b,now)
+                            end)
+                        local stamp = self.effects:stamp(id,path.hit,now)
+                        if stamp then
+                            self.transport:pruneImpacts(self.effects.records,now)
+                            self.transport:publishImpact(stamp)
+                        end
+                    end)
+                    if not visible then
+                        path=nil
+                        Log.once("environment_error", "Environmental effects disabled: "..tostring(problem))
+                    end
                 end
                 self.transport:publishState(entry.actor, session, path, now)
             end)

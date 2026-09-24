@@ -9,6 +9,15 @@ This does not constitute a playable 1.0.0 release.
 
 Initial release target. No stable release has been published.
 
+- Prototype 4: add an original spline-deformed stream mesh with per-frame
+  interpolation, server-side arc collision and locally rendered surface decals.
+  Decals retain surface-local attachment data, expire after 60 seconds and fade
+  over the last ten; late discovery preserves remaining lifetime and opacity.
+  Enforce the 256-record cap before allocating replacements. Known water-volume
+  bounds suppress stains pending exact water-surface integration. Cosmetic
+  binding failures leave continence relief running. New visuals are unverified
+  in-game; multiplayer testing remains last.
+
 - Prototype 3: replace the controller chord with hold D-pad Left alone; preserve
   keyboard P. Remove LB, D-pad Down, menu-button and unused F8 capture, plus all
   native inventory/drop/menu action replay. Read Blueprint key state on the

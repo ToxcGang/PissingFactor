@@ -4,6 +4,7 @@ local logs,messages,hooks={},{},{}
 local now,updates,cleans,closes,nextId=0,0,0,0,0
 local world,controller,player,network,driver={},{},{},{},{}
 local beginPlay,endPlay
+local visualUpdates=0
 local function valid(v) return type(v)=="table" and not v.invalid end
 local function wrap(v) return {get=function()return v end} end
 function controller:IsLocalController() return true end
@@ -20,6 +21,7 @@ function driver:GetClass()
     return {GetFullName=function()return "BlueprintGeneratedClass /Game/Mods/PissingFactor/ModActor.ModActor_C" end}
 end
 driver.PFHeartbeatSeen=false
+driver.PFPrototypeRevision=4
 network.PFReason="released"
 local transport={}
 function transport:now() return now end
@@ -32,6 +34,9 @@ package.loaded["pf.game"]={playerClass="test_player",valid=valid,same=function(a
     localController=function()return controller end,
     showStatus=function(_,s)messages[#messages+1]=s;return true end}
 package.loaded["pf.transport"]={new=function()return transport end}
+package.loaded["pf.presentation"]={new=function()
+    return {update=function()visualUpdates=visualUpdates+1 end,reset=function()end}
+end}
 package.loaded["pf.server"]={new=function()
     return {sessions={},add=function(self,id,p,a)
         self.sessions[id]={player=p,actor=a,simulation={ready=true,held=false,active=false,sequence=1,reason="released"}}
@@ -76,11 +81,15 @@ controller.f6=false;now=2.01;hooks[path](wrap(driver))
 controller.f6=true;now=2.02;hooks[path](wrap(driver))
 assert(#messages==3,"A new press should work after cooldown")
 local oldHeartbeat=hooks[path]
+controller.Pawn=nil
+local previousVisualUpdates=visualUpdates
+now=2.2;hooks[path](wrap(driver))
+assert(visualUpdates==previousVisualUpdates+1,"Presentation cleanup must keep ticking while the local pawn is absent")
 endPlay(wrap(driver))
 assert(next(hooks)==nil and cleans==1 and closes==1,"EndPlay must release actors and hooks")
 now=5;oldHeartbeat(wrap(driver))
 assert(#messages==3,"Stale heartbeat must be ignored")
-driver.PFHeartbeatSeen=nil
+driver.PFPrototypeRevision=nil
 beginPlay(wrap(driver))
 assert(next(hooks)==nil,"Old cooked assets must not start the runtime")
 assert(logs[#logs]:find("Old ModActor assets",1,true),"Old assets need an actionable diagnostic")

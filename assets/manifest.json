@@ -1,9 +1,13 @@
 {
   "license": "MIT",
   "author": "ToxcGang",
-  "status": "generation and in-game presentation pending",
+  "status": "prototype 4 stream and solid stains implemented; manual presentation checks pending",
+  "prototypeCookedAssets": [
+    "ModActor", "BP_PFPlayer", "BP_PFImpact", "BP_PFInput", "BP_PFStream", "SM_PFStream",
+    "M_Stream", "M_Stain", "M_Cloud", "M_Ripple"
+  ],
   "requiredCookedAssets": [
-    "ModActor", "BP_PFPlayer", "BP_PFImpact", "BP_PFInput", "WBP_PFSettings",
+    "ModActor", "BP_PFPlayer", "BP_PFImpact", "BP_PFInput", "BP_PFStream", "SM_PFStream", "WBP_PFSettings",
     "M_Stream", "M_Stain", "M_Cloud", "M_Ripple",
     "A_PFHands", "A_PFBody", "S_Stream", "S_Splash"
   ],

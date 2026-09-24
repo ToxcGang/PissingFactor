@@ -9,7 +9,7 @@ public class PissingFactorEditor : ModuleRules
         PrivateDependencyModuleNames.AddRange(new[] {
             "AssetRegistry", "AssetTools", "BlueprintGraph", "Kismet", "KismetCompiler",
             "UMG", "UMGEditor", "Slate", "SlateCore", "InputCore", "Json", "JsonUtilities",
-            "AnimationDataController", "DeveloperSettings"
+            "AnimationDataController", "DeveloperSettings", "MeshDescription", "StaticMeshDescription"
         });
     }
 }

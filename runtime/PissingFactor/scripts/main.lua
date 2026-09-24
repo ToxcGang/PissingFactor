@@ -10,10 +10,11 @@ local Server=require("pf.server")
 local Transport=require("pf.transport")
 local Client=require("pf.client")
 local Pump=require("pf.pump")
+local Presentation=require("pf.presentation")
 local configSource=dofile(directory.."../config.lua")
 local config,warnings=Config.validate(configSource)
 for _,warning in ipairs(warnings) do Log.info(warning) end
-Log.info("Loading "..Version.mod..", protocol "..Version.protocol..", prototype 3 (D-pad Left)")
+Log.info("Loading "..Version.mod..", protocol "..Version.protocol..", prototype 4 (stream and stains)")
 
 if configSource.EnablePrototype~=true then
     Log.info("Development build: gameplay disabled. EnablePrototype is only for disposable-world integration testing.")
@@ -21,6 +22,7 @@ if configSource.EnablePrototype~=true then
 end
 
 local driver,world,transport,server,client,pump,localController,lastRoster
+local presentation
 local failed,busy=false,false
 local hooks={}
 local driverPath="/Game/Mods/PissingFactor/ModActor.ModActor_C"
@@ -44,6 +46,7 @@ local function rpc(context)
         mod=stringValue(actor.PFInputVersion),protocol=actor.PFInputProtocol},transport:now())
 end
 local function reset()
+    if presentation then pcall(function()presentation:reset()end);presentation=nil end
     if client then pcall(function()client:close()end); client=nil end
     if server then pcall(function()server:reset()end) end
     for path,ids in pairs(hooks) do pcall(UnregisterHook,path,ids[1],ids[2]) end
@@ -53,7 +56,14 @@ local function reset()
 end
 
 local function diagnostics()
-    Log.info("Diagnostic snapshot "..Version.mod.." / protocol "..Version.protocol.." / prototype 3 (D-pad Left)")
+    Log.info("Diagnostic snapshot "..Version.mod.." / protocol "..Version.protocol.." / prototype 4 (stream and stains)")
+    Log.info("Presentation enabled: "..tostring(presentation~=nil))
+    if presentation then
+        local streams,stains=0,0
+        for _ in pairs(presentation.streams or {}) do streams=streams+1 end
+        for _ in pairs(presentation.stains or {}) do stains=stains+1 end
+        Log.info("Local visuals: "..streams.." stream(s), "..stains.." stain record(s)")
+    end
     Log.info("Local input actor: "..tostring(client~=nil).."; enabled: "..tostring(client and client.enabled))
     local count=0
     if server then
@@ -126,6 +136,13 @@ local function tick(now,dt)
     end
     if client and not client:update() then client=nil end
     server:tick(now,dt)
+    if presentation then
+        local ok,err=pcall(function()presentation:update(now)end)
+        if not ok then
+            Log.once("presentation_error","Presentation disabled: "..tostring(err))
+            pcall(function()presentation:reset()end);presentation=nil
+        end
+    end
 end
 
 local function heartbeat(context)
@@ -142,6 +159,7 @@ local function heartbeat(context)
     if not ok then
         failed=true
         Log.info("Integration stopped: "..tostring(err))
+        if presentation then pcall(function()presentation:reset()end);presentation=nil end
         if client then pcall(function()client:close()end);client=nil end
         if server then pcall(function()server:reset()end) end
         Game.showStatus(localController,"Prototype stopped after an error. See UE4SS.log.")
@@ -156,20 +174,23 @@ local function initialize(actor)
     assert(Game.valid(instance),"Game instance unavailable")
     local installed=stringValue(instance.PlayerVersionString)
     assert(installed==Version.game,"Unsupported game version: "..installed.."; expected "..Version.game)
-    assert(Game.read(actor,"PFHeartbeatSeen")~=nil,
-        "Old ModActor assets: install all three cooked files from prototype 3")
+    assert(Game.read(actor,"PFPrototypeRevision")==4,
+        "Old ModActor assets: install all three cooked files from prototype 4")
     world=actor:GetWorld()
     transport=Transport.new(world,config)
     driver=actor
     server=Server.new(config,Game,transport)
     pump=Pump.new(config.TickSeconds)
+    local visualOk,visual=pcall(Presentation.new,world)
+    if visualOk then presentation=visual
+    else Log.once("presentation_load","Presentation unavailable: "..tostring(visual)) end
     local path="/Game/Mods/PissingFactor/BP_PFPlayer.BP_PFPlayer_C:"
     register(path.."ServerSetInput",rpc)
     register(path.."ServerUpdateAim",rpc)
     -- Blueprint events only store key state. Read it on the 10 Hz actor tick;
     -- do not reenter Lua or dispatch native gameplay actions from input events.
     register(driverPath..":ReceiveTick",heartbeat)
-    Log.info("Prototype 3 ready; hold P or D-pad Left. No LB capture or input-event Lua hooks. Tap F6 for local status.")
+    Log.info("Prototype 4 ready; hold P or D-pad Left. Stream/stain prototype; water effects pending. Tap F6 for local status.")
 end
 
 -- BPModLoaderMod creates ModActor in each world. Both callbacks below already
