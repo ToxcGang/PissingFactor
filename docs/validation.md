@@ -4,6 +4,11 @@ Do not publish v1.0.0 until every required scenario below passes on the pinned
 game and UE4SS builds. Record evidence per build in `validation/results.json`.
 Missing checks are **unverified**, not passed.
 
+The owner requested multiplayer testing last on 2026-09-23. Follow the
+[development order](development-plan.md): remaining feature implementation and
+single-player checks precede hosted/dedicated, late-join and network-fault tests.
+This changes scheduling only; all release gates below remain required.
+
 ## Evidence collected
 
 - Game log identifies Abiotic Factor 1.4.0.28206 and Unreal Engine 5.4.4.
@@ -73,6 +78,7 @@ Missing checks are **unverified**, not passed.
 | performance | Several simultaneous emitters, long session | Caps hold; actor/component counts return to baseline after expiry |
 | clean_install | New installation from release ZIP | All dependencies/files detected; no missing resources |
 
-The owner can provide physical controller testing. A second player/client still
-needs to be arranged for real co-op acceptance. Editor simulations and mocked
-transport tests do not replace those checks.
+The owner performs in-game and physical controller testing. Arrange a second
+player/client at the final multiplayer stage; this is not a prerequisite for
+current feature development. Editor simulations and mocked transport tests do
+not replace those final checks.

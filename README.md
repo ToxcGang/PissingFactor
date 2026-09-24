@@ -35,6 +35,9 @@ need testing; follow the [manual procedure](docs/manual-prototype-test.md).
 Animations, water collision, presentation, rebinding UI and multiplayer acceptance
 are unfinished. `EnablePrototype` defaults to false so a source installation
 does not change gameplay silently.
+The [development order](docs/development-plan.md) puts the remaining features
+and single-player checks first, with multiplayer testing as the final acceptance
+stage. A second client is not required to continue feature development.
 Unit tests do **not** establish in-game or multiplayer compatibility. See
 [validation](docs/validation.md) for the evidence and remaining release gates.
 There is no `v1.0.0` release until all required acceptance checks pass.
@@ -53,6 +56,7 @@ Target environment:
 
 - [Installation and removal](docs/installation.md)
 - [Building and development](docs/building.md)
+- [Development order: multiplayer testing last](docs/development-plan.md)
 - [Manual prototype test: start here](docs/manual-prototype-test.md)
 - [Architecture and networking](docs/architecture.md)
 - [Validation and multiplayer checklist](docs/validation.md)

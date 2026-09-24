@@ -5,6 +5,11 @@ cannot. The transport prototype cooks with 5.4.4 and produces the initial
 network/input actors and materials. Full presentation and gameplay acceptance
 remain pending.
 
+Follow the [development order](development-plan.md): complete the remaining
+features and single-player checks before requesting multiplayer acceptance.
+Keep the existing network architecture during implementation; remote-client
+testing is deferred to the final stage rather than blocking asset development.
+
 ## Portable checks
 
 Install Python 3.12, then run from the repository root:
@@ -46,7 +51,7 @@ documentation links, and packaging rules. They do not simulate Unreal RPCs.
 UE4SS loads the cooked `ModActor` through BPModLoaderMod. The editor plugin is
 only an authoring tool; players never install a native PissingFactor DLL.
 
-For the initial transport proof only, append `--prototype` to the cook command.
+For incomplete development builds, append `--prototype` to the cook command.
 This creates a build explicitly marked as a prototype; release packaging rejects
 it even if someone supplies acceptance evidence. Enable `EnablePrototype` only
 in the installed development configuration of a disposable test world. This

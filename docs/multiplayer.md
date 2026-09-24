@@ -1,15 +1,22 @@
 # Multiplayer testing
 
+This is the final acceptance stage, after the remaining features and
+single-player checks, following the owner's 2026-09-23 change to the
+[development order](development-plan.md). Remote-client proof is no longer a
+prerequisite for implementing effects, animations or settings. Multiplayer
+acceptance is still required before publishing v1.0.0.
+
 Use a disposable world and matching source commit, all three cooked-file hashes, mod
 version, protocol, game version and UE4SS bundle on every machine. Install the
 Lua mod and cooked pack on the host/dedicated server as well as each client.
 Record exact builds in an acceptance file described in [building](building.md).
 
-## Transport prototype first
+## First checks within the final multiplayer stage
 
-The current opt-in prototype is intended to establish ownership and continence
-integration before the complete visual package. It has no verified water
-collision, animations, effect rendering or settings panel. Enable
+Begin the final multiplayer stage with ownership and continence checks before
+assessing the complete visual package across clients. The current opt-in
+prototype has no verified water collision, animations, effect rendering or
+settings panel; continue implementing those before requesting these tests. Enable
 `EnablePrototype = true` in each installed `config.lua` for this test only.
 The source default remains false. A prototype build cannot be released as 1.0.0.
 

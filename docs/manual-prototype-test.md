@@ -111,9 +111,11 @@ the first error if present. Include:
 - Which step failed, or which steps behaved as expected.
 - `sourceCommit` from the ZIP's `package-manifest.json` if you updated the package.
 
-Avoid posting a complete game dump, save, or unredacted log publicly. The
-[multiplayer procedure](multiplayer.md) is the next stage when another client
-is available; a successful single-player test does not prove remote RPC delivery.
+Avoid posting a complete game dump, save, or unredacted log publicly. Continue
+with the remaining features and single-player checks in the
+[development order](development-plan.md). The [multiplayer procedure](multiplayer.md)
+is reserved for the final acceptance stage; a successful single-player test
+does not prove remote RPC delivery.
 
 ## After testing
 
