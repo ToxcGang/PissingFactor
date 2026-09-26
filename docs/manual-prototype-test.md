@@ -1,8 +1,9 @@
 # Manual prototype test
 
-**Current build: prototype 4 (stream and stains).** Replace the earlier prototype before
-retesting. Both the Lua files and all three cooked files changed; updating only
-Lua leaves incompatible network/driver assets, which the new code rejects.
+**Current build: prototype 4a (effects startup fix).** This fixes prototype 4's
+`IsDedicatedServer` startup error, which disabled every visual effect. It retains
+the prototype 4 asset layout. Install the full package below to keep files together;
+upgrading from prototype 3 requires all three cooked files as well as Lua.
 P and D-pad Left retain the prototype 3 controls. You perform all game/controller
 tests yourself; this is not a stable release.
 
@@ -14,7 +15,7 @@ water surfaces. Multiplayer acceptance remains scheduled last.
 
 ## Prepare
 
-1. Close Abiotic Factor before updating files. Extract `PissingFactor-1.0.0-prototype-4.zip`
+1. Close Abiotic Factor before updating files. Extract `PissingFactor-1.0.0-prototype-4a.zip`
    into `steamapps/common/AbioticFactor`, following [installation](installation.md).
    Replace the Lua files and keep the `.pak`, `.utoc` and `.ucas` files together.
    The build tool's `PissingFactor-1.0.0-dev.zip` is also valid when its startup
@@ -32,11 +33,14 @@ water surfaces. Multiplayer acceptance remains scheduled last.
 ## First test: stability and visible status
 
 1. Enter normal gameplay in the disposable world. The startup log should include
-   `prototype 4 (stream and stains)` and `Prototype 4 ready`. If it only says
+   `prototype 4a (effects startup fix)` and `Prototype 4a ready`. If it only says
    `Waiting for BPModLoaderMod`, send that log before testing the ability.
 2. **Tap and release F6 once.** The mod should show a local status message in the
    game's text-message area, and write one diagnostic snapshot to `UE4SS.log`.
    Holding F6 should produce only one snapshot. The message is local only.
+   It should include `Effects ready` with stream/stain counts (zero while idle).
+   If it says `Effects unavailable`, report that reason before continuing; the
+   full error is also repeated in the F6 log snapshot.
 3. `Continence 75/75` (or any equal current/maximum pair) means there is no
    bathroom need yet. This is a valid diagnostic result; you do not need to wait
    for need to build for this stability test.

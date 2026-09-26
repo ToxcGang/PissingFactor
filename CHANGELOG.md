@@ -9,6 +9,12 @@ This does not constitute a playable 1.0.0 release.
 
 Initial release target. No stable release has been published.
 
+- Prototype 4a: fix the presentation startup failure reported on 2026-09-25.
+  Call `IsDedicatedServer` on `KismetSystemLibrary`, its verified UE 5.4.4 owner,
+  instead of `GameplayStatics`. Correct the engine mock that masked this error.
+  F6 now shows visual readiness/counts or a short failure reason locally and
+  repeats the full presentation error in the log. In-game effects need retesting.
+
 - Prototype 4: add an original spline-deformed stream mesh with per-frame
   interpolation, server-side arc collision and locally rendered surface decals.
   Decals retain surface-local attachment data, expire after 60 seconds and fade

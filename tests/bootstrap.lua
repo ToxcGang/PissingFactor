@@ -5,6 +5,7 @@ local now,updates,cleans,closes,nextId=0,0,0,0,0
 local world,controller,player,network,driver={},{},{},{},{}
 local beginPlay,endPlay
 local visualUpdates=0
+local visualFailure
 local function valid(v) return type(v)=="table" and not v.invalid end
 local function wrap(v) return {get=function()return v end} end
 function controller:IsLocalController() return true end
@@ -35,7 +36,11 @@ package.loaded["pf.game"]={playerClass="test_player",valid=valid,same=function(a
     showStatus=function(_,s)messages[#messages+1]=s;return true end}
 package.loaded["pf.transport"]={new=function()return transport end}
 package.loaded["pf.presentation"]={new=function()
-    return {update=function()visualUpdates=visualUpdates+1 end,reset=function()end}
+    if visualFailure=="load" then error("mock presentation load failed") end
+    return {update=function()
+        if visualFailure=="update" then error("mock presentation update failed") end
+        visualUpdates=visualUpdates+1
+    end,reset=function()end}
 end}
 package.loaded["pf.server"]={new=function()
     return {sessions={},add=function(self,id,p,a)
@@ -77,6 +82,7 @@ controller.f6=true
 for i=101,200 do now=i/100;hooks[path](wrap(driver)) end
 assert(#messages==2,"Holding F6 must not repeat diagnostics")
 assert(messages[2]:find("No bathroom need yet",1,true),"Empty state must be explained")
+assert(messages[2]:find("Effects ready",1,true),"F6 must show presentation readiness locally")
 controller.f6=false;now=2.01;hooks[path](wrap(driver))
 controller.f6=true;now=2.02;hooks[path](wrap(driver))
 assert(#messages==3,"A new press should work after cooldown")
@@ -93,4 +99,24 @@ driver.PFPrototypeRevision=nil
 beginPlay(wrap(driver))
 assert(next(hooks)==nil,"Old cooked assets must not start the runtime")
 assert(logs[#logs]:find("Old ModActor assets",1,true),"Old assets need an actionable diagnostic")
-print("Bootstrap checks passed: engine-only pump, no input hooks, 10 Hz, F6 edges, empty status, teardown, stale tick, old assets")
+
+-- Cosmetics can fail while relief keeps working. F6 must repeat the cause after
+-- a world change even when the one-time startup log would be suppressed.
+driver.PFPrototypeRevision=4;controller.Pawn=player
+local function snapshot()
+    controller.f6=false;now=now+1;hooks[path](wrap(driver))
+    controller.f6=true;now=now+1;hooks[path](wrap(driver))
+    return messages[#messages]
+end
+visualFailure="load";beginPlay(wrap(driver))
+local beforeUpdates=updates
+assert(snapshot():find("Effects unavailable: mock presentation load failed",1,true))
+assert(updates>beforeUpdates,"Presentation startup failure must not stop gameplay ticks")
+assert(table.concat(logs,"\n"):find("Presentation error:",1,true),"F6 must repeat the stored error in the log")
+endPlay(wrap(driver));visualFailure=nil;beginPlay(wrap(driver))
+assert(snapshot():find("Effects ready",1,true),"A new world must clear the previous presentation error")
+visualFailure="update";beforeUpdates=updates
+assert(snapshot():find("Effects unavailable: mock presentation update failed",1,true))
+assert(updates>beforeUpdates,"A presentation update failure must not stop gameplay ticks")
+endPlay(wrap(driver))
+print("Bootstrap checks passed: engine-only pump, no input hooks, 10 Hz, F6 edges/status/errors, teardown, stale tick, old assets")

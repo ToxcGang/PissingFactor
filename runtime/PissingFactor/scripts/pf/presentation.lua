@@ -21,7 +21,9 @@ local function destroyDecal(o) if Game.valid(o) then o:K2_DestroyComponent(o) en
 
 function Presentation.new(world)
     -- No cosmetic asset loads, actors, materials or discovery on a dedicated server.
-    if UE.GetGameplayStatics():IsDedicatedServer(world) then return nil end
+    -- IsDedicatedServer belongs to KismetSystemLibrary in the pinned game dump.
+    -- GameplayStatics returns a non-callable TrivialObject for this missing member.
+    if UE.GetKismetSystemLibrary():IsDedicatedServer(world) then return nil end
     return setmetatable({world=world,streams={},stains={},players={},impacts={},
         streamClass=asset("BP_PFStream",true),stainMaterial=asset("M_Stain",false)},Presentation)
 end

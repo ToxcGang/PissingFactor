@@ -36,14 +36,21 @@ local function decal(position,attached,life)
     end
     return o
 end
-local statics={IsDedicatedServer=function()return dedicated end,
-    GetGameState=function()return {GetServerWorldTimeSeconds=function()return now end}end,
+-- Keep the helper libraries separate, as reflected in UE 5.4.4. The old mock
+-- incorrectly put IsDedicatedServer on GameplayStatics and hid a startup failure.
+local system={IsDedicatedServer=function(_,context)
+    assert(context==world,"The dedicated-server check needs the presentation world")
+    return dedicated
+end}
+local statics={GetGameState=function()return {GetServerWorldTimeSeconds=function()return now end}end,
     SpawnDecalAttached=function(_,_,_,surface,_,position,_,mode,life)
         assert(mode==0);return decal(position,surface,life)
     end,
     SpawnDecalAtLocation=function(_,_,_,_,position,_,life)return decal(position,nil,life)end}
+setmetatable(statics,{__index=function()return {}end}) -- Non-callable missing UE member.
 package.loaded["pf.game"]={valid=valid,same=function(a,b)return valid(a) and a==b end}
 package.loaded["UEHelpers"]={GetGameplayStatics=function()return statics end,
+    GetKismetSystemLibrary=function()return system end,
     GetKismetMathLibrary=function()return {MakeRotFromX=function(_,v)return v end}end}
 function FName(s)return s end
 function StaticFindObject()return {GetAsset=function()loads=loads+1;return {}end}end
@@ -53,6 +60,7 @@ dedicated=true
 assert(Presentation.new(world)==nil and loads==0,"Dedicated server must not load visual assets")
 dedicated=false
 local p=Presentation.new(world)
+assert(p and loads==2,"Non-dedicated worlds must initialize both presentation assets")
 local player=source(1)
 player.PFPresentationRevision,player.PFProtocol,player.PFVersion=4,1,"1.0.0"
 player.PFActive,player.PFHasPath,player.PFServerTime=true,true,0

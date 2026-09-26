@@ -61,12 +61,21 @@ This changes scheduling only; all release gates below remain required.
 
 ## Required gameplay scenarios
 
+The owner's 2026-09-25 prototype 4 run **failed visual initialization**. The
+UE4SS log at 23:09:00 reports `attempt to call a TrivialObject value (method
+'IsDedicatedServer')`; F6 subsequently reports `Presentation enabled: false`.
+Authority relief continued, including a final step to 75/75 at 23:09:41.
+Read-only inspection of the game's reflected headers locates `IsDedicatedServer`
+on `KismetSystemLibrary`, not `GameplayStatics`. Prototype 4a corrects this call
+and the test mock that had placed it on the wrong library. F6 now retains and
+displays presentation failure reasons. No automated game testing was performed.
+
 Prototype 4 adds the original spline stream and solid-surface stains. Offline
 tests cover collision ordering, conservative water exclusion, arc duration,
 presentation expiry/fade, moving-surface references, allocation caps and cleanup.
 Unreal generation checks the Blueprint graphs and original mesh. These checks
 are not evidence of in-game visual quality or correct physical surfaces; the
-owner's prototype 4 manual run is still pending. Prototype 3's recorded success
+owner's prototype 4a manual retest is still pending. Prototype 3's recorded success
 does not transfer automatically to the new build.
 
 | ID | Scenario | Acceptance |
