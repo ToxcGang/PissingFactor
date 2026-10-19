@@ -45,6 +45,17 @@ by Unreal's decal lifetime fade. Late-discovered decals start at their remaining
 opacity. Rendering asset loads and cosmetic actors are skipped on dedicated
 servers. Cosmetic binding failures are isolated from continence updates.
 
+Prototype 4b creates streams through the reflected `BeginDeferredActorSpawnFromClass`
+and `FinishSpawningActor` signatures verified in the pinned game dump. It supplies
+the stream-origin transform, AlwaysSpawn collision handling and unit scale, and
+sets curve state before finishing construction. Partial actors are registered for
+cleanup immediately. Class types are checked on load; cached stream classes and
+stain materials are revalidated before use so an idle Lua wrapper is not treated
+as an Unreal lifetime guarantee. The pinned loader's native
+[UWorld spawn wrapper](https://github.com/UE4SS-RE/RE-UE4SS/blob/c838a8ac/UE4SS/src/LuaType/LuaUWorld.cpp)
+does not expose collision handling or deferred initialization. The actual cause
+of the reported 4a rejection remains unproven pending in-game evidence.
+
 Replicated action/impact state carries server time and expiration, so late
 joiners see only the remaining lifetime. Each client creates cosmetic visuals
 locally; the dedicated server performs no rendering or audio work. Limit

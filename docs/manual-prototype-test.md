@@ -1,7 +1,8 @@
 # Manual prototype test
 
-**Current build: prototype 4a (effects startup fix).** This fixes prototype 4's
-`IsDedicatedServer` startup error, which disabled every visual effect. It retains
+**Current build: prototype 4b (stream spawn fix).** This addresses prototype 4a's
+`Stream actor spawn failed` error with deferred spawning and asset revalidation.
+It also includes the earlier `IsDedicatedServer` fix. It retains
 the prototype 4 asset layout. Install the full package below to keep files together;
 upgrading from prototype 3 requires all three cooked files as well as Lua.
 P and D-pad Left retain the prototype 3 controls. You perform all game/controller
@@ -15,7 +16,7 @@ water surfaces. Multiplayer acceptance remains scheduled last.
 
 ## Prepare
 
-1. Close Abiotic Factor before updating files. Extract `PissingFactor-1.0.0-prototype-4a.zip`
+1. Close Abiotic Factor before updating files. Extract `PissingFactor-1.0.0-prototype-4b.zip`
    into `steamapps/common/AbioticFactor`, following [installation](installation.md).
    Replace the Lua files and keep the `.pak`, `.utoc` and `.ucas` files together.
    The build tool's `PissingFactor-1.0.0-dev.zip` is also valid when its startup
@@ -33,7 +34,7 @@ water surfaces. Multiplayer acceptance remains scheduled last.
 ## First test: stability and visible status
 
 1. Enter normal gameplay in the disposable world. The startup log should include
-   `prototype 4a (effects startup fix)` and `Prototype 4a ready`. If it only says
+   `prototype 4b (stream spawn fix)` and `Prototype 4b ready`. If it only says
    `Waiting for BPModLoaderMod`, send that log before testing the ability.
 2. **Tap and release F6 once.** The mod should show a local status message in the
    game's text-message area, and write one diagnostic snapshot to `UE4SS.log`.
@@ -93,6 +94,8 @@ report the logs before running the rest of the checklist.
    the floor. Expect a narrow yellow curved stream that stops at the first solid
    surface. Walking and aiming should move it. Look down enough to see the
    waist-height origin; custom hand/body animations are not present yet.
+   The first successfully created stream writes `First local stream actor created`
+   to the log. Tap F6 while still holding to capture the live stream count.
 2. Release the button. The stream should disappear promptly; the yellow impact
    stain should remain. Tap F6: the log includes presentation status and local
    stream/stain counts. Releasing should leave zero active stream visuals.
@@ -110,6 +113,12 @@ report the logs before running the rest of the checklist.
 Send the first `Environmental effects disabled`, `Presentation unavailable` or
 `Presentation disabled` log line if relief works but visuals do not. These paths
 disable affected cosmetics without intentionally disabling bathroom relief.
+If stream creation fails again, include the new `Stream spawn begin failed` or
+`Stream spawn finish failed` message, which identifies the class and failing phase.
+Also include nearby `LogSpawn` entries from the game's separate
+`%LOCALAPPDATA%/AbioticFactor/Saved/Logs/AbioticFactor.log`. The old prototype 4a
+message did not distinguish the failing phase, and the available engine log did
+not explain that failure.
 Exact water boundaries and water effects are deferred; do not treat dry-surface
 success as passing the water acceptance gate.
 

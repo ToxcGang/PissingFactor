@@ -14,7 +14,7 @@ local Presentation=require("pf.presentation")
 local configSource=dofile(directory.."../config.lua")
 local config,warnings=Config.validate(configSource)
 for _,warning in ipairs(warnings) do Log.info(warning) end
-Log.info("Loading "..Version.mod..", protocol "..Version.protocol..", prototype 4a (effects startup fix)")
+Log.info("Loading "..Version.mod..", protocol "..Version.protocol..", prototype 4b (stream spawn fix)")
 
 if configSource.EnablePrototype~=true then
     Log.info("Development build: gameplay disabled. EnablePrototype is only for disposable-world integration testing.")
@@ -57,7 +57,7 @@ local function reset()
 end
 
 local function diagnostics()
-    Log.info("Diagnostic snapshot "..Version.mod.." / protocol "..Version.protocol.." / prototype 4a (effects startup fix)")
+    Log.info("Diagnostic snapshot "..Version.mod.." / protocol "..Version.protocol.." / prototype 4b (stream spawn fix)")
     Log.info("Presentation enabled: "..tostring(presentation~=nil))
     if presentationError then Log.info("Presentation error: "..presentationError) end
     local effects="Effects disabled on dedicated server."
@@ -202,7 +202,7 @@ local function initialize(actor)
     -- Blueprint events only store key state. Read it on the 10 Hz actor tick;
     -- do not reenter Lua or dispatch native gameplay actions from input events.
     register(driverPath..":ReceiveTick",heartbeat)
-    Log.info("Prototype 4a ready; hold P or D-pad Left. Stream/stain prototype; water effects pending. Tap F6 for local status.")
+    Log.info("Prototype 4b ready; hold P or D-pad Left. Stream/stain prototype; water effects pending. Tap F6 for local status.")
 end
 
 -- BPModLoaderMod creates ModActor in each world. Both callbacks below already

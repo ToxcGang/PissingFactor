@@ -70,12 +70,25 @@ on `KismetSystemLibrary`, not `GameplayStatics`. Prototype 4a corrects this call
 and the test mock that had placed it on the wrong library. F6 now retains and
 displays presentation failure reasons. No automated game testing was performed.
 
+The owner's 2026-10-19 prototype 4a retest passed presentation initialization:
+F6 at 16:42:16 reported `Presentation enabled: true` and continence 63.75/75.
+The first action at 16:42:34 failed with `Stream actor spawn failed`; presentation
+was then disabled. Relief continued to 75/75 at 16:42:35. The game's available
+log has no corresponding `LogSpawn` reason at that timestamp. This is a **failed
+visual test**; the specific engine rejection cause remains unproven.
+Prototype 4b switches cosmetic stream creation to explicit reflected deferred
+spawning, validates/reloads asset references, initializes the curve before
+construction finishes, and records the failing phase/class/location. Offline
+tests cover deferred-spawn failures and partial-allocation cleanup, stale class
+and material references, and non-class asset rejection. They do not demonstrate
+that Unreal will accept the spawn in the game.
+
 Prototype 4 adds the original spline stream and solid-surface stains. Offline
 tests cover collision ordering, conservative water exclusion, arc duration,
 presentation expiry/fade, moving-surface references, allocation caps and cleanup.
 Unreal generation checks the Blueprint graphs and original mesh. These checks
 are not evidence of in-game visual quality or correct physical surfaces; the
-owner's prototype 4a manual retest is still pending. Prototype 3's recorded success
+owner's prototype 4b manual retest is still pending. Prototype 3's recorded success
 does not transfer automatically to the new build.
 
 | ID | Scenario | Acceptance |

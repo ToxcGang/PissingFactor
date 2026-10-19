@@ -49,8 +49,16 @@ this disabled all presentation before any cosmetic assets were loaded. Prototype
 4a corrects the call to `KismetSystemLibrary`, verified against the pinned game's
 reflection dump. This was a mod defect, not an effect-setting or input problem.
 
-Install the entire prototype 4a package, including all three cooked containers.
-Confirm startup says `prototype 4a (effects startup fix)`. When continence is already
+The 2026-10-19 prototype 4a run initialized presentation but reported `Stream
+actor spawn failed` on first use. The engine log did not establish the cause.
+Prototype 4b uses reflected deferred spawning at the stream origin with explicit
+collision/scale settings, initializes the curve before finishing construction,
+and revalidates class/material references before allocation. It reports the
+class, failing phase and begin-spawn location if creation is still rejected.
+This change awaits the owner's in-game retest.
+
+Install the entire prototype 4b package, including all three cooked containers.
+Confirm startup says `prototype 4b (stream spawn fix)`. When continence is already
 at maximum, no stream or fresh stain is expected. Look down toward a nearby wall
 or floor in a dry room while holding P or D-pad Left with need available.
 
@@ -61,13 +69,16 @@ reason. It records `Presentation enabled`, local visual counts and the full stor
 disabled` message. Cosmetic failures are isolated from bathroom relief.
 Surfaces can have decal reception disabled by the game. Known liquid-volume
 bounds suppress stains; water clouds/ripples are not implemented in this build.
+For a new spawn failure, also copy nearby `LogSpawn` messages from
+`%LOCALAPPDATA%/AbioticFactor/Saved/Logs/AbioticFactor.log`. A successful first
+stream logs `First local stream actor created`; F6 while held records its count.
 
 ## Shortcut drops items or changes hotbar slots
 
 Stop testing the ability and report the input bindings and controller model.
 The controller interception check is a release requirement. Use D-pad Left
 alone. The mod must leave LB/L1 inventory cycling with the game. Confirm startup
-logs say `prototype 4a (effects startup fix)` and replace all three cooked files as well
+logs say `prototype 4b (stream spawn fix)` and replace all three cooked files as well
 as Lua when updating. When using Steam Input, check whether the controller is
 being translated into keyboard presses and avoid mapping the same button twice.
 

@@ -9,6 +9,14 @@ This does not constitute a playable 1.0.0 release.
 
 Initial release target. No stable release has been published.
 
+- Prototype 4b: address the first-stream spawn failure reported on 2026-10-19.
+  Use UE 5.4.4's reflected deferred spawn functions at the emitting player's
+  position, with explicit collision handling and scale. Initialize the curve
+  before finishing construction and retain partial allocations for cleanup.
+  Validate loaded class types, reload stale stream/material references before
+  use, and report the spawn phase, class and location on failure. The original
+  engine rejection cause remains unproven; in-game retesting is required.
+
 - Prototype 4a: fix the presentation startup failure reported on 2026-09-25.
   Call `IsDedicatedServer` on `KismetSystemLibrary`, its verified UE 5.4.4 owner,
   instead of `GameplayStatics`. Correct the engine mock that masked this error.
