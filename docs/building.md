@@ -37,6 +37,10 @@ documentation links, and packaging rules. They do not simulate Unreal RPCs.
    Complete and verify the input, UI, animations, and effects against the game.
    The generator currently creates actor RPC definitions, key capture, an original
    stream mesh, its interpolating presentation Blueprint and four materials.
+   In prototype 4c, generation also executes the stream request/release/EndPlay
+   graph in a disposable headless authoring world, including failure latching
+   and transient/nonreplicated field checks. This does not launch Abiotic Factor
+   or test UE4SS integration, controllers, rendering output or multiplayer.
    The full-release asset manifest deliberately requires unfinished resources too.
 5. Commit reviewed original assets, then run the same command with `--stage cook`.
    Only the mod's namespace is packed. No engine, editor, or game assets are copied.

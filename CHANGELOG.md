@@ -9,6 +9,17 @@ This does not constitute a playable 1.0.0 release.
 
 Initial release target. No stable release has been published.
 
+- Prototype 4c: withdraw the 4b Lua deferred-spawn path after a reported freeze.
+  Lua now posts stream requests to transient, nonreplicated fields; an unhooked
+  player Blueprint tick creates/releases local actors and EndPlay cleans them up.
+  The class reference is held by Unreal, and rejected requests latch until release.
+  Execute the generated lifecycle graph in a disposable headless Unreal world as
+  part of authoring validation. Bump driver/presentation asset revision to 5.
+  Add `EnableEffects = false` by default: relief-only mode skips arc traces,
+  impact publishing, cosmetic asset loads and rendering. Add first-use debug
+  checkpoints to locate hangs when effects are later enabled. The exact 4b hang
+  location remains unproven; the new build still needs manual stability checks.
+
 - Prototype 4b: address the first-stream spawn failure reported on 2026-10-19.
   Use UE 5.4.4's reflected deferred spawn functions at the emitting player's
   position, with explicit collision handling and scale. Initialize the curve

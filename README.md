@@ -24,7 +24,7 @@ UE4SS. Controller support means controllers on PC, not installation on consoles.
 ## Development status
 
 The repository contains the implementation in progress, tests, and build tools.
-The current milestone is prototype 4b: an opt-in visible stream and solid-surface
+The current milestone is prototype 4c: an opt-in visible stream and solid-surface
 stain build. The editor plugin generates the original curved-stream mesh,
 presentation Blueprint, replicated actors, consumed key bindings and materials.
 Prototype 3 uses D-pad Left alone, removes LB interception and native action
@@ -39,7 +39,11 @@ visuals failed to initialize in the owner's 2026-09-25 test. Prototype 4a correc
 the reflected helper call responsible. A 2026-10-19 retest passed initialization
 but failed to spawn the first stream actor. Prototype 4b revises stream spawning,
 revalidates idle asset references and adds detailed failure diagnostics. Visible
-effects await another manual retest; the engine rejection cause is not yet proven.
+effects remain unverified. The subsequent prototype 4b run froze on first use;
+4c removes Lua's deferred-spawn calls, moves stream allocation and cleanup onto
+the player Blueprint's own tick/EndPlay, and defaults `EnableEffects` to false.
+First verify relief-only stability with that setting off, then follow the manual
+procedure for a separate effects test. The exact hang location is not proven.
 Known liquid-volume bounds conservatively
 suppress stains; exact water surfaces, water effects, animations, in-game audio,
 rebinding UI and multiplayer acceptance are unfinished. `EnablePrototype` defaults

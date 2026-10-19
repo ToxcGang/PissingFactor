@@ -14,7 +14,7 @@ local Presentation=require("pf.presentation")
 local configSource=dofile(directory.."../config.lua")
 local config,warnings=Config.validate(configSource)
 for _,warning in ipairs(warnings) do Log.info(warning) end
-Log.info("Loading "..Version.mod..", protocol "..Version.protocol..", prototype 4b (stream spawn fix)")
+Log.info("Loading "..Version.mod..", protocol "..Version.protocol..", prototype 4c (Blueprint stream lifecycle)")
 
 if configSource.EnablePrototype~=true then
     Log.info("Development build: gameplay disabled. EnablePrototype is only for disposable-world integration testing.")
@@ -57,16 +57,18 @@ local function reset()
 end
 
 local function diagnostics()
-    Log.info("Diagnostic snapshot "..Version.mod.." / protocol "..Version.protocol.." / prototype 4b (stream spawn fix)")
+    Log.info("Diagnostic snapshot "..Version.mod.." / protocol "..Version.protocol.." / prototype 4c (Blueprint stream lifecycle)")
     Log.info("Presentation enabled: "..tostring(presentation~=nil))
     if presentationError then Log.info("Presentation error: "..presentationError) end
-    local effects="Effects disabled on dedicated server."
+    local effects=config.EnableEffects and "Effects disabled on dedicated server." or "Effects off (EnableEffects=false)."
     if presentation then
-        local streams,stains=0,0
-        for _ in pairs(presentation.streams or {}) do streams=streams+1 end
+        local streams,stains,pending=0,0,0
+        for _,entry in pairs(presentation.streams or {}) do
+            if Game.valid(entry.visual) then streams=streams+1 else pending=pending+1 end
+        end
         for _ in pairs(presentation.stains or {}) do stains=stains+1 end
-        Log.info("Local visuals: "..streams.." stream(s), "..stains.." stain record(s)")
-        effects=string.format("Effects ready: %d stream(s), %d stain record(s).",streams,stains)
+        Log.info("Local visuals: "..streams.." stream(s), "..stains.." stain record(s), "..pending.." pending stream(s)")
+        effects=string.format("Effects ready: %d stream(s), %d stain record(s), %d pending.",streams,stains,pending)
     elseif presentationError then
         local brief=presentationError:match(":%d+:%s*(.*)") or presentationError
         effects="Effects unavailable: "..brief:sub(1,160).." (see UE4SS.log)."
@@ -183,18 +185,22 @@ local function initialize(actor)
     assert(Game.valid(instance),"Game instance unavailable")
     local installed=stringValue(instance.PlayerVersionString)
     assert(installed==Version.game,"Unsupported game version: "..installed.."; expected "..Version.game)
-    assert(Game.read(actor,"PFPrototypeRevision")==4,
-        "Old ModActor assets: install all three cooked files from prototype 4")
+    assert(Game.read(actor,"PFPrototypeRevision")==5,
+        "Old ModActor assets: install all three cooked files from prototype 4c")
     world=actor:GetWorld()
     transport=Transport.new(world,config)
     driver=actor
     server=Server.new(config,Game,transport)
     pump=Pump.new(config.TickSeconds)
-    local visualOk,visual=pcall(Presentation.new,world)
-    if visualOk then presentation=visual
+    if config.EnableEffects then
+        local visualOk,visual=pcall(Presentation.new,world)
+        if visualOk then presentation=visual
+        else
+            presentationError=tostring(visual)
+            Log.once("presentation_load","Presentation unavailable: "..presentationError)
+        end
     else
-        presentationError=tostring(visual)
-        Log.once("presentation_load","Presentation unavailable: "..presentationError)
+        Log.info("Effects off: relief-only test mode; no arc traces, impact publishing or presentation")
     end
     local path="/Game/Mods/PissingFactor/BP_PFPlayer.BP_PFPlayer_C:"
     register(path.."ServerSetInput",rpc)
@@ -202,7 +208,7 @@ local function initialize(actor)
     -- Blueprint events only store key state. Read it on the 10 Hz actor tick;
     -- do not reenter Lua or dispatch native gameplay actions from input events.
     register(driverPath..":ReceiveTick",heartbeat)
-    Log.info("Prototype 4b ready; hold P or D-pad Left. Stream/stain prototype; water effects pending. Tap F6 for local status.")
+    Log.info("Prototype 4c ready; hold P or D-pad Left. EnableEffects="..tostring(config.EnableEffects)..". Tap F6 for local status.")
 end
 
 -- BPModLoaderMod creates ModActor in each world. Both callbacks below already

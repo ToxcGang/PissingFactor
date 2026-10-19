@@ -44,9 +44,9 @@ function Transport:spawnPlayer(player)
     assert(Game.valid(controller), "Player has no controller")
     local actor=self.world:SpawnActor(self.playerClass,player:K2_GetActorLocation(),rotation)
     assert(Game.valid(actor), "Cannot spawn BP_PFPlayer")
-    if Game.read(actor,"PFPresentationRevision")~=4 then
+    if Game.read(actor,"PFPresentationRevision")~=5 then
         actor:K2_DestroyActor()
-        error("Old network assets: install all three cooked files from prototype 4")
+        error("Old network assets: install all three cooked files from prototype 4c")
     end
     actor:SetOwner(controller)
     actor.PFPawn=player

@@ -43,6 +43,11 @@ does not demonstrate successful authoritative relief.
 
 ## Relief works but the stream or stains are missing
 
+In prototype 4c, `EnableEffects = false` intentionally runs relief-only mode.
+F6 reports `Effects off`; missing visuals are expected. Keep that setting for
+the first stability test after the 4b freeze. The separate effects test requires
+closing the game, enabling the switch, and restarting.
+
 Prototype 4's reported startup error was `attempt to call a TrivialObject value
 (method 'IsDedicatedServer')`. It called a function on the wrong helper library;
 this disabled all presentation before any cosmetic assets were loaded. Prototype
@@ -55,10 +60,16 @@ Prototype 4b uses reflected deferred spawning at the stream origin with explicit
 collision/scale settings, initializes the curve before finishing construction,
 and revalidates class/material references before allocation. It reports the
 class, failing phase and begin-spawn location if creation is still rejected.
-This change awaits the owner's in-game retest.
+The subsequent owner-run 4b test froze on first use. The final mod log line is
+the first relief update, without a completed spawn or caught Lua exception; it
+does not identify the exact native hang. 4c removes both Lua deferred-spawn calls.
+The player Blueprint's own tick creates/releases streams and EndPlay cleans them
+up; Lua only writes request/class fields and consumes the resulting reference.
+The generated graph passes a headless Unreal lifecycle test, which does not
+prove stability inside the game/UE4SS combination.
 
-Install the entire prototype 4b package, including all three cooked containers.
-Confirm startup says `prototype 4b (stream spawn fix)`. When continence is already
+Install the entire prototype 4c package, including all three cooked containers.
+Confirm startup says `prototype 4c (Blueprint stream lifecycle)`. When continence is already
 at maximum, no stream or fresh stain is expected. Look down toward a nearby wall
 or floor in a dry room while holding P or D-pad Left with need available.
 
@@ -78,7 +89,7 @@ stream logs `First local stream actor created`; F6 while held records its count.
 Stop testing the ability and report the input bindings and controller model.
 The controller interception check is a release requirement. Use D-pad Left
 alone. The mod must leave LB/L1 inventory cycling with the game. Confirm startup
-logs say `prototype 4b (stream spawn fix)` and replace all three cooked files as well
+logs say `prototype 4c (Blueprint stream lifecycle)` and replace all three cooked files as well
 as Lua when updating. When using Steam Input, check whether the controller is
 being translated into keyboard presses and avoid mapping the same button twice.
 

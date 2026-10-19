@@ -6,6 +6,7 @@ local world,controller,player,network,driver={},{},{},{},{}
 local beginPlay,endPlay
 local visualUpdates=0
 local visualFailure
+local effectsEnabled=true
 local function valid(v) return type(v)=="table" and not v.invalid end
 local function wrap(v) return {get=function()return v end} end
 function controller:IsLocalController() return true end
@@ -22,7 +23,7 @@ function driver:GetClass()
     return {GetFullName=function()return "BlueprintGeneratedClass /Game/Mods/PissingFactor/ModActor.ModActor_C" end}
 end
 driver.PFHeartbeatSeen=false
-driver.PFPrototypeRevision=4
+driver.PFPrototypeRevision=5
 network.PFReason="released"
 local transport={}
 function transport:now() return now end
@@ -67,7 +68,7 @@ function ExecuteWithDelay()error("Bootstrap must not enqueue async actions")end
 function RegisterKeyBind()error("Diagnostics must not allocate callbacks on the input thread")end
 local originalDofile=dofile
 function dofile(path)
-    if path:match("config%.lua$") then return {EnablePrototype=true} end
+    if path:match("config%.lua$") then return {EnablePrototype=true,EnableEffects=effectsEnabled} end
     return originalDofile(path)
 end
 assert(loadfile("runtime/PissingFactor/scripts/main.lua"))()
@@ -102,7 +103,7 @@ assert(logs[#logs]:find("Old ModActor assets",1,true),"Old assets need an action
 
 -- Cosmetics can fail while relief keeps working. F6 must repeat the cause after
 -- a world change even when the one-time startup log would be suppressed.
-driver.PFPrototypeRevision=4;controller.Pawn=player
+driver.PFPrototypeRevision=5;controller.Pawn=player
 local function snapshot()
     controller.f6=false;now=now+1;hooks[path](wrap(driver))
     controller.f6=true;now=now+1;hooks[path](wrap(driver))
@@ -118,5 +119,11 @@ assert(snapshot():find("Effects ready",1,true),"A new world must clear the previ
 visualFailure="update";beforeUpdates=updates
 assert(snapshot():find("Effects unavailable: mock presentation update failed",1,true))
 assert(updates>beforeUpdates,"A presentation update failure must not stop gameplay ticks")
+endPlay(wrap(driver))
+effectsEnabled=false;visualFailure="load";beforeUpdates=updates
+assert(loadfile("runtime/PissingFactor/scripts/main.lua"))() -- Settings take effect on restart.
+beginPlay(wrap(driver))
+assert(snapshot():find("Effects off (EnableEffects=false)",1,true),"Relief-only mode must be explicit in F6")
+assert(updates>beforeUpdates,"Disabling effects must retain the gameplay loop")
 endPlay(wrap(driver))
 print("Bootstrap checks passed: engine-only pump, no input hooks, 10 Hz, F6 edges/status/errors, teardown, stale tick, old assets")

@@ -57,16 +57,25 @@ function Server:tick(now, dt)
                     end
                 end
                 local path
-                if session.active then
+                local function checkpoint(stage)
+                    if self.config.Debug then
+                        Log.once("phase:"..tostring(self)..id..stage,"Environment checkpoint: "..stage)
+                    end
+                end
+                if session.active and self.config.EnableEffects then
                     local visible,problem=pcall(function()
+                        checkpoint("arc trace begin")
                         path = Trajectory.trace(self.game.origin(player), session.aim,
                             self.config.RangeCm, function(a,b)
                                 return self.transport:trace(player,a,b,now)
                             end)
+                        checkpoint("arc trace complete")
                         local stamp = self.effects:stamp(id,path.hit,now)
                         if stamp then
                             self.transport:pruneImpacts(self.effects.records,now)
+                            checkpoint("impact publish begin")
                             self.transport:publishImpact(stamp)
+                            checkpoint("impact publish complete")
                         end
                     end)
                     if not visible then
@@ -74,7 +83,9 @@ function Server:tick(now, dt)
                         Log.once("environment_error", "Environmental effects disabled: "..tostring(problem))
                     end
                 end
+                if session.active then checkpoint("state publish begin") end
                 self.transport:publishState(entry.actor, session, path, now)
+                if session.active then checkpoint("state publish complete") end
             end)
             if not ok then
                 session:stop("compatibility_error",true)

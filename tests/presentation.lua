@@ -5,7 +5,7 @@ local now,dedicated,loads,live,peak=0,false,0,0,0
 local badMaterial=false
 local badClass=false
 local spawnFailure
-local begins,finishes=0,0
+local requests=0
 local spawned={}
 local function valid(o)return type(o)=="table" and not o.destroyed end
 local function source(id)
@@ -13,12 +13,28 @@ local function source(id)
         K2_GetActorLocation=function()return {X=10,Y=20,Z=0}end}
 end
 local function near(a,b)assert(math.abs(a-b)<0.000001,tostring(a).." ~= "..tostring(b))end
-function world:SpawnActor()error("Stream must use the explicit reflected deferred spawn API")end
+function world:SpawnActor()error("Lua must never spawn a cosmetic stream actor")end
 local function streamActor()
     local o={K2_DestroyActor=function(self)self.destroyed=true end,
         SetActorHiddenInGame=function(self,hidden)self.hidden=hidden end,hidden=true}
     spawned[#spawned+1]=o
     return o
+end
+-- This models the asynchronous boundary only. The generated Blueprint's real
+-- spawn/latch/release/EndPlay graph is executed separately by PFBuild.
+local function engineTick()
+    for _,actor in ipairs(players) do
+        if actor.PFStreamWanted then
+            if not valid(actor.PFStreamVisual) and actor.PFStreamStatus~=3 then
+                requests=requests+1
+                if spawnFailure then actor.PFStreamStatus=3
+                else actor.PFStreamVisual=streamActor();actor.PFStreamStatus=2 end
+            end
+        else
+            if valid(actor.PFStreamVisual) then actor.PFStreamVisual:K2_DestroyActor() end
+            actor.PFStreamVisual=nil;actor.PFStreamStatus=0
+        end
+    end
 end
 local function decal(position,attached,life)
     live=live+1;peak=math.max(peak,live)
@@ -47,24 +63,8 @@ local system={IsDedicatedServer=function(_,context)
     return dedicated
 end}
 local statics={GetGameState=function()return {GetServerWorldTimeSeconds=function()return now end}end,
-    BeginDeferredActorSpawnFromClass=function(_,context,class,transform,collision,owner,scale)
-        begins=begins+1
-        assert(context==world and valid(class) and class:IsClass())
-        assert(collision==1 and owner==nil and scale==0,"Explicit AlwaysSpawn and unit root scale required")
-        assert(transform.Translation.Z==100,"Spawn at the stream origin instead of world zero")
-        if spawnFailure=="begin" then return nil end
-        local o=streamActor();o.spawnTransform=transform;return o
-    end,
-    FinishSpawningActor=function(_,o,transform,scale)
-        finishes=finishes+1
-        assert(o.hidden and o.spawnTransform==transform and scale==0)
-        assert(o.PFDisplayStart==transform.Translation and o.PFTargetStart==transform.Translation,
-            "Set presentation state before construction/BeginPlay")
-        assert(o.PFDisplayEnd and o.PFTargetEnd and o.PFDisplayTangentA and o.PFDisplayTangentB and o.PFUp)
-        if spawnFailure=="finish" then return nil end
-        if spawnFailure=="construction" then error("mock construction failure") end
-        return o
-    end,
+    BeginDeferredActorSpawnFromClass=function()error("Deferred spawn must not run inside Lua")end,
+    FinishSpawningActor=function()error("Finish spawning must not run inside Lua")end,
     SpawnDecalAttached=function(_,_,_,surface,_,position,_,mode,life)
         assert(mode==0);return decal(position,surface,life)
     end,
@@ -74,12 +74,7 @@ package.loaded["pf.game"]={valid=valid,same=function(a,b)return valid(a) and a==
 package.loaded["pf.log"]={info=function()end,once=function()end}
 package.loaded["UEHelpers"]={GetGameplayStatics=function()return statics end,
     GetKismetSystemLibrary=function()return system end,
-    GetKismetMathLibrary=function()return {MakeRotFromX=function(_,v)return v end,
-        MakeTransform=function(_,position,rotation,scale)
-            assert(rotation.Pitch==0 and rotation.Yaw==0 and rotation.Roll==0)
-            assert(scale.X==1 and scale.Y==1 and scale.Z==1)
-            return {Translation=position,Rotation={X=0,Y=0,Z=0,W=1},Scale3D=scale}
-        end}end}
+    GetKismetMathLibrary=function()return {MakeRotFromX=function(_,v)return v end}end}
 function FName(s)return s end
 function StaticFindObject()return {GetAsset=function(_,data)
     loads=loads+1
@@ -94,14 +89,18 @@ dedicated=false
 local p=Presentation.new(world)
 assert(p and loads==2,"Non-dedicated worlds must initialize both presentation assets")
 local player=source(1)
-player.PFPresentationRevision,player.PFProtocol,player.PFVersion=4,1,"1.0.0"
+player.PFPresentationRevision,player.PFProtocol,player.PFVersion=5,1,"1.0.0"
 player.PFActive,player.PFHasPath,player.PFServerTime=true,true,0
 player.PFOrigin,player.PFEndpoint={X=0,Y=0,Z=100},{X=100,Y=0,Z=80}
 player.PFAim,player.PFDuration={X=1,Y=0,Z=0},0.2
 players={player};p:update(0)
+assert(#spawned==0 and player.PFStreamWanted and player.PFStreamClass==p.streamClass,
+    "Lua must only publish a request and an engine-owned class reference")
+now=0.05;p:update(now);assert(#spawned==0 and requests==0)
+engineTick();p:update(now)
 local stream=p.streams["1"].visual
 assert(not stream.hidden and stream.PFDisplayStart.Z==100)
-assert(begins==1 and finishes==1,"Each stream allocation must finish spawning exactly once")
+assert(requests==1,"Repeated Lua updates must not duplicate a pending request")
 near(stream.PFTargetTangentA.X,110)
 player.PFDuration=0.1;player.PFEndpoint={X=50,Y=0,Z=90}
 now=0.1;p:update(now)
@@ -111,6 +110,8 @@ assert(stream.PFUp.Y==1,"Vertical aiming needs a nonparallel spline up vector")
 player.PFOrigin={X=5000,Y=0,Z=100};p:update(now)
 assert(stream.PFDisplayStart.X==5000,"Teleport must not interpolate across the world")
 player.PFActive=false;now=0.2;p:update(now)
+assert(not player.PFStreamWanted and not stream.destroyed,"Lua must request release without destroying actors")
+engineTick()
 assert(stream.destroyed and next(p.streams)==nil,"Release must remove the stream")
 player.PFActive=true;player.PFServerTime=-5
 p:update(now);assert(next(p.streams)==nil,"Stale network state cannot leave an abandoned stream")
@@ -122,27 +123,31 @@ local oldClass,oldLoads=p.streamClass,loads
 oldClass.destroyed=true;player.PFHasPath=true
 p:update(now)
 assert(p.streamClass~=oldClass and loads==oldLoads+1,"Reload a stale stream class immediately before use")
+assert(player.PFStreamClass==p.streamClass,"Blueprint must hold the live class reference")
+engineTick();p:update(now)
 player.PFActive=false;p:update(now)
+engineTick()
 assert(spawned[#spawned].destroyed)
 badClass=true
-local priorBegins=begins
+local priorRequests=requests
 local ok,err=pcall(Presentation.new,world)
-assert(not ok and tostring(err):find("not a class",1,true) and begins==priorBegins,
+assert(not ok and tostring(err):find("not a class",1,true) and requests==priorRequests,
     "Do not pass a non-class asset to Unreal's spawn API")
 badClass=false
-for _,phase in ipairs({"begin","finish","construction"}) do
-    spawnFailure=phase;player.PFActive=true
-    local allocations=#spawned
-    ok,err=pcall(function()p:update(now)end)
-    assert(not ok,"A failed spawn must produce a presentation diagnostic")
-    if phase~="construction" then
-        assert(tostring(err):find("Stream spawn "..phase.." failed",1,true))
-        assert(tostring(err):find("BP_PFStream_C",1,true),"Include the exact class in spawn diagnostics")
-    end
-    p:reset()
-    if #spawned>allocations then assert(spawned[#spawned].destroyed,"Clean up a partial deferred spawn") end
-end
-spawnFailure=nil;player.PFActive=false
+spawnFailure=true;player.PFActive=true
+p:update(now);engineTick()
+priorRequests=requests;engineTick();assert(requests==priorRequests,"Rejected requests must not retry every frame")
+ok,err=pcall(function()p:update(now)end)
+assert(not ok and tostring(err):find("Blueprint stream spawn rejected",1,true))
+p:reset();engineTick();spawnFailure=nil
+p:update(now) -- Queue but deliberately do not advance the engine tick.
+now=now+2.1;player.PFServerTime=now
+ok,err=pcall(function()p:update(now)end)
+assert(not ok and tostring(err):find("request timed out",1,true))
+p:reset();engineTick()
+-- A release before the engine tick must cancel a pending allocation entirely.
+player.PFServerTime=now;p:update(now);priorRequests=requests
+player.PFActive=false;p:update(now);engineTick();assert(requests==priorRequests)
 
 local function impact(id)
     local a=source(id)
@@ -181,4 +186,4 @@ p:reset();assert(live==0 and next(p.stains)==nil)
 impacts={impact(3000)};now=55;badMaterial=true
 assert(not pcall(function()p:update(now)end))
 p:reset();assert(live==0,"Partial material initialization must not leak a decal")
-print("Presentation checks passed: server guard, deferred spawn/init/cleanup, class/material revalidation, stream stop/clipping, stale state, late fade, prop attachment, expiry, cap")
+print("Presentation checks passed: no Lua stream spawning/destruction, queued requests, cancellation, failure latch/timeout, class/material revalidation, stream stop/clipping, fade, prop attachment, expiry, cap")

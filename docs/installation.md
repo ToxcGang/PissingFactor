@@ -58,6 +58,12 @@ Menus retain the game's navigation. The current prototype has fixed bindings;
 local rebinding and audiovisual preferences await the settings UI. The host's
 `config.lua` controls relief rate, range, and effect lifetimes.
 
+Prototype 4c also has `EnableEffects = false` by default for relief-only testing.
+Keep it off for the first stability test. On the host, enabling it turns on arc
+traces and environmental publishing; each machine also uses it to opt into local
+rendering. Restart after changing it. Follow the staged
+[manual test](manual-prototype-test.md) before enabling experimental effects.
+
 ## Removal
 
 Close the game/server. Remove only the `PissingFactor` mod folder and its

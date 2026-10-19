@@ -6,6 +6,8 @@
 #include "Components/SceneComponent.h"
 #include "Components/SplineMeshComponent.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/World.h"
+#include "Engine/Engine.h"
 #include "MeshDescription.h"
 #include "StaticMeshAttributes.h"
 #include "EdGraph/EdGraph.h"
@@ -20,8 +22,12 @@
 #include "GameFramework/Pawn.h"
 #include "K2Node_CustomEvent.h"
 #include "K2Node_CallFunction.h"
+#include "K2Node_IfThenElse.h"
+#include "K2Node_SpawnActorFromClass.h"
+#include "K2Node_Self.h"
 #include "K2Node_VariableGet.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "K2Node_Event.h"
 #include "K2Node_InputKey.h"
 #include "K2Node_VariableSet.h"
@@ -135,6 +141,8 @@ static void SetFromPin(UBlueprint* BP, FName VariableName, UEdGraphPin* Value, U
     Exec = Set->GetThenPin();
 }
 
+static void StreamLifecycle(UBlueprint* BP);
+
 static void PlayerActor()
 {
     UBlueprint* BP = Actor(TEXT("BP_PFPlayer"), true);
@@ -146,7 +154,7 @@ static void PlayerActor()
     Real.PinSubCategory = UEdGraphSchema_K2::PC_Double;
     Variable(BP, TEXT("PFPawn"), Type(UEdGraphSchema_K2::PC_Object, APawn::StaticClass()), TEXT("None"), true);
     Variable(BP, TEXT("PFActive"), Bool, TEXT("false"), true);
-    Variable(BP, TEXT("PFPresentationRevision"), Int, TEXT("4"), true);
+    Variable(BP, TEXT("PFPresentationRevision"), Int, TEXT("5"), true);
     Variable(BP, TEXT("PFHasPath"), Bool, TEXT("false"), true);
     Variable(BP, TEXT("PFDuration"), Real, TEXT("0"), true);
     Variable(BP, TEXT("PFOrigin"), Vector, TEXT("0,0,0"), true);
@@ -180,12 +188,17 @@ static void PlayerActor()
             SetFromPin(BP, P.Target, Pin, Exec);
         }
     }
+    StreamLifecycle(BP);
     FKismetEditorUtilities::CompileBlueprint(BP);
     check(BP->Status != BS_Error);
     check(CastChecked<AActor>(BP->GeneratedClass->GetDefaultObject())->GetIsReplicated());
     check(BP->GeneratedClass->FindFunctionByName(TEXT("ServerSetInput"))->HasAllFunctionFlags(FUNC_Net | FUNC_NetServer | FUNC_NetReliable));
     check(BP->GeneratedClass->FindFunctionByName(TEXT("ServerUpdateAim"))->HasAllFunctionFlags(FUNC_Net | FUNC_NetServer));
     check(!BP->GeneratedClass->FindFunctionByName(TEXT("ServerUpdateAim"))->HasAnyFunctionFlags(FUNC_NetReliable));
+    auto* CDO = CastChecked<AActor>(BP->GeneratedClass->GetDefaultObject());
+    CDO->PrimaryActorTick.bCanEverTick = true;
+    CDO->PrimaryActorTick.bStartWithTickEnabled = true;
+    CDO->PrimaryActorTick.bAllowTickOnDedicatedServer = false;
     Save(BP);
 }
 
@@ -251,7 +264,7 @@ static void DriverActor()
 {
     UBlueprint* BP = Actor(TEXT("ModActor"), false);
     Variable(BP, TEXT("PFHeartbeatSeen"), Type(UEdGraphSchema_K2::PC_Boolean), TEXT("false"), false);
-    Variable(BP, TEXT("PFPrototypeRevision"), Type(UEdGraphSchema_K2::PC_Int), TEXT("4"), false);
+    Variable(BP, TEXT("PFPrototypeRevision"), Type(UEdGraphSchema_K2::PC_Int), TEXT("5"), false);
     FGraphNodeCreator<UK2Node_Event> Creator(*BP->UbergraphPages[0]);
     UK2Node_Event* Tick = Creator.CreateNode();
     Tick->EventReference.SetExternalMember(TEXT("ReceiveTick"), AActor::StaticClass());
@@ -431,6 +444,104 @@ static void Default(UK2Node_CallFunction* Node, const TCHAR* Pin, const TCHAR* V
     GetDefault<UEdGraphSchema_K2>()->TrySetDefaultValue(*Node->FindPinChecked(Pin),Value);
 }
 
+static UK2Node_Event* OverrideEvent(UBlueprint* BP, FName Name)
+{
+    FGraphNodeCreator<UK2Node_Event> Creator(*BP->UbergraphPages[0]);
+    auto* Node = Creator.CreateNode();
+    Node->EventReference.SetExternalMember(Name,AActor::StaticClass());
+    Node->bOverrideFunction = true;
+    Creator.Finalize();
+    return Node;
+}
+
+static UK2Node_IfThenElse* Branch(UBlueprint* BP, UEdGraphPin* Exec, UEdGraphPin* Condition)
+{
+    FGraphNodeCreator<UK2Node_IfThenElse> Creator(*BP->UbergraphPages[0]);
+    auto* Node = Creator.CreateNode(); Creator.Finalize();
+    Link(Exec,Node->GetExecPin()); Link(Condition,Node->GetConditionPin());
+    return Node;
+}
+
+static UEdGraphPin* SetLiteral(UBlueprint* BP, FName Name, UEdGraphPin* Exec, const TCHAR* Value)
+{
+    FGraphNodeCreator<UK2Node_VariableSet> Creator(*BP->UbergraphPages[0]);
+    auto* Node = Creator.CreateNode(); Node->VariableReference.SetSelfMember(Name); Creator.Finalize();
+    Link(Exec,Node->GetExecPin());
+    GetDefault<UEdGraphSchema_K2>()->TrySetDefaultValue(*Node->FindPinChecked(Name),Value);
+    return Node->GetThenPin();
+}
+
+static UEdGraphPin* StreamValid(UBlueprint* BP)
+{
+    auto* Valid = Call(BP,UKismetSystemLibrary::StaticClass(),TEXT("IsValid"));
+    Link(Get(BP,TEXT("PFStreamVisual")),Valid->FindPinChecked(TEXT("Object")));
+    return Valid->GetReturnValuePin();
+}
+
+static void ReleaseStream(UBlueprint* BP, UEdGraphPin* Exec)
+{
+    auto* Exists = Branch(BP,Exec,StreamValid(BP));
+    auto* Destroy = Call(BP,AActor::StaticClass(),TEXT("K2_DestroyActor"));
+    Link(Exists->GetThenPin(),Destroy->GetExecPin());
+    Link(Get(BP,TEXT("PFStreamVisual")),Destroy->FindPinChecked(UEdGraphSchema_K2::PN_Self));
+    auto* Cleared = SetLiteral(BP,TEXT("PFStreamVisual"),Destroy->GetThenPin(),TEXT("None"));
+    SetLiteral(BP,TEXT("PFStreamStatus"),Cleared,TEXT("0"));
+    SetLiteral(BP,TEXT("PFStreamStatus"),Exists->GetElsePin(),TEXT("0"));
+}
+
+static void StreamLifecycle(UBlueprint* BP)
+{
+    const auto Int = Type(UEdGraphSchema_K2::PC_Int);
+    Variable(BP,TEXT("PFStreamClass"),Type(UEdGraphSchema_K2::PC_Class,AActor::StaticClass()),TEXT("None"),false);
+    Variable(BP,TEXT("PFStreamVisual"),Type(UEdGraphSchema_K2::PC_Object,AActor::StaticClass()),TEXT("None"),false);
+    Variable(BP,TEXT("PFStreamWanted"),Type(UEdGraphSchema_K2::PC_Boolean),TEXT("false"),false);
+    Variable(BP,TEXT("PFStreamStatus"),Int,TEXT("0"),false);
+    for (const FName Name : {FName(TEXT("PFStreamClass")),FName(TEXT("PFStreamVisual")),
+         FName(TEXT("PFStreamWanted")),FName(TEXT("PFStreamStatus"))})
+    {
+        BP->NewVariables[FBlueprintEditorUtils::FindNewVariableIndex(BP,Name)].PropertyFlags |= CPF_Transient;
+    }
+    FKismetEditorUtilities::CompileBlueprint(BP);
+    auto* Tick = OverrideEvent(BP,TEXT("ReceiveTick"));
+    auto* Dedicated = Call(BP,UKismetSystemLibrary::StaticClass(),TEXT("IsDedicatedServer"));
+    auto* Client = Branch(BP,Tick->FindPinChecked(UEdGraphSchema_K2::PN_Then),Dedicated->GetReturnValuePin());
+    auto* Wanted = Branch(BP,Client->GetElsePin(),Get(BP,TEXT("PFStreamWanted")));
+    ReleaseStream(BP,Wanted->GetElsePin());
+    auto* Exists = Branch(BP,Wanted->GetThenPin(),StreamValid(BP));
+    auto* Failed = Call(BP,UKismetMathLibrary::StaticClass(),TEXT("NotEqual_IntInt"));
+    Link(Get(BP,TEXT("PFStreamStatus")),Failed->FindPinChecked(TEXT("A"))); Default(Failed,TEXT("B"),TEXT("3"));
+    auto* MaySpawn = Branch(BP,Exists->GetElsePin(),Failed->GetReturnValuePin());
+    auto* ValidClass = Call(BP,UKismetSystemLibrary::StaticClass(),TEXT("IsValidClass"));
+    Link(Get(BP,TEXT("PFStreamClass")),ValidClass->FindPinChecked(TEXT("Class")));
+    auto* ClassReady = Branch(BP,MaySpawn->GetThenPin(),ValidClass->GetReturnValuePin());
+    SetLiteral(BP,TEXT("PFStreamStatus"),ClassReady->GetElsePin(),TEXT("3"));
+    auto* Begin = SetLiteral(BP,TEXT("PFStreamStatus"),ClassReady->GetThenPin(),TEXT("1"));
+    FGraphNodeCreator<UK2Node_SpawnActorFromClass> SpawnCreator(*BP->UbergraphPages[0]);
+    auto* Spawn = SpawnCreator.CreateNode();
+    // This node's PostPlacedNewNode accesses its scale pin before the generic
+    // graph creator normally allocates pins.
+    Spawn->AllocateDefaultPins(); SpawnCreator.Finalize();
+    Link(Begin,Spawn->GetExecPin());
+    Link(Get(BP,TEXT("PFStreamClass")),Spawn->FindPinChecked(TEXT("Class")));
+    const auto* Schema = GetDefault<UEdGraphSchema_K2>();
+    Schema->TrySetDefaultValue(*Spawn->FindPinChecked(TEXT("CollisionHandlingOverride")),TEXT("AlwaysSpawn"));
+    Schema->TrySetDefaultValue(*Spawn->FindPinChecked(TEXT("TransformScaleMethod")),TEXT("OverrideRootScale"));
+    auto* Transform = Call(BP,UKismetMathLibrary::StaticClass(),TEXT("MakeTransform"));
+    Link(Get(BP,TEXT("PFOrigin")),Transform->FindPinChecked(TEXT("Location")));
+    Default(Transform,TEXT("Scale"),TEXT("1,1,1"));
+    Link(Transform->GetReturnValuePin(),Spawn->FindPinChecked(TEXT("SpawnTransform")));
+    FGraphNodeCreator<UK2Node_Self> SelfCreator(*BP->UbergraphPages[0]);
+    auto* Self = SelfCreator.CreateNode(); SelfCreator.Finalize();
+    Link(Self->FindPinChecked(UEdGraphSchema_K2::PN_Self),Spawn->FindPinChecked(TEXT("Owner")));
+    UEdGraphPin* Spawned = Spawn->GetThenPin();
+    SetFromPin(BP,TEXT("PFStreamVisual"),Spawn->FindPinChecked(UEdGraphSchema_K2::PN_ReturnValue),Spawned);
+    auto* Result = Branch(BP,Spawned,StreamValid(BP));
+    SetLiteral(BP,TEXT("PFStreamStatus"),Result->GetThenPin(),TEXT("2"));
+    SetLiteral(BP,TEXT("PFStreamStatus"),Result->GetElsePin(),TEXT("3"));
+    auto* End = OverrideEvent(BP,TEXT("ReceiveEndPlay"));
+    ReleaseStream(BP,End->FindPinChecked(UEdGraphSchema_K2::PN_Then));
+}
+
 static void StreamActor(UStaticMesh* Mesh)
 {
     UBlueprint* BP = Actor(TEXT("BP_PFStream"), false);
@@ -500,6 +611,59 @@ static void StreamActor(UStaticMesh* Mesh)
     check(!CDO->GetIsReplicated());
     Save(BP);
 }
+
+static void VerifyStreamLifecycle()
+{
+    // Execute the generated graph in a disposable authoring world. No game
+    // installation, input, save files, UE4SS or interactive editor is involved.
+    auto* PlayerClass = LoadClass<AActor>(nullptr,*(Root+TEXT("BP_PFPlayer.BP_PFPlayer_C")));
+    auto* StreamClass = LoadClass<AActor>(nullptr,*(Root+TEXT("BP_PFStream.BP_PFStream_C")));
+    check(PlayerClass && StreamClass);
+    UWorld::InitializationValues Values;
+    Values.AllowAudioPlayback(false).CreatePhysicsScene(false).CreateNavigation(false).CreateAISystem(false).ShouldSimulatePhysics(false);
+    UWorld* World = UWorld::CreateWorld(EWorldType::Game,false,NAME_None,nullptr,true,ERHIFeatureLevel::Num,&Values);
+    check(World && GEngine);
+    GEngine->CreateNewWorldContext(EWorldType::Game).SetCurrentWorld(World);
+    World->InitializeActorsForPlay(FURL());
+    AActor* Player = World->SpawnActor<AActor>(PlayerClass,FVector(10,20,100),FRotator::ZeroRotator);
+    check(Player);
+    Player->DispatchBeginPlay();
+    auto* Class = FindFProperty<FClassProperty>(PlayerClass,TEXT("PFStreamClass"));
+    auto* Visual = FindFProperty<FObjectProperty>(PlayerClass,TEXT("PFStreamVisual"));
+    auto* Wanted = FindFProperty<FBoolProperty>(PlayerClass,TEXT("PFStreamWanted"));
+    auto* Status = FindFProperty<FIntProperty>(PlayerClass,TEXT("PFStreamStatus"));
+    auto* Origin = FindFProperty<FStructProperty>(PlayerClass,TEXT("PFOrigin"));
+    check(Class && Visual && Wanted && Status && Origin);
+    for (FProperty* Property : TArray<FProperty*>{Class,Visual,Wanted,Status})
+    {
+        check(!Property->HasAnyPropertyFlags(CPF_Net));
+        check(Property->HasAnyPropertyFlags(CPF_Transient));
+    }
+    *Origin->ContainerPtrToValuePtr<FVector>(Player) = FVector(10,20,100);
+    UFunction* Tick = Player->FindFunctionChecked(TEXT("ReceiveTick"));
+    const auto Update = [&]() { float Delta = 1.f/60.f; Player->ProcessEvent(Tick,&Delta); };
+    Update(); check(Status->GetPropertyValue_InContainer(Player)==0);
+    Wanted->SetPropertyValue_InContainer(Player,true);
+    Update(); check(Status->GetPropertyValue_InContainer(Player)==3); // Missing class latches failure.
+    Class->SetObjectPropertyValue_InContainer(Player,StreamClass);
+    Update(); check(Status->GetPropertyValue_InContainer(Player)==3); // No retry every frame.
+    Wanted->SetPropertyValue_InContainer(Player,false); Update();
+    Wanted->SetPropertyValue_InContainer(Player,true); Update();
+    auto* First = Cast<AActor>(Visual->GetObjectPropertyValue_InContainer(Player));
+    check(IsValid(First) && First->GetClass()==StreamClass && First->GetOwner()==Player);
+    check(!First->GetIsReplicated() && First->GetActorLocation().Equals(FVector(10,20,100)));
+    check(Status->GetPropertyValue_InContainer(Player)==2);
+    Update(); check(Visual->GetObjectPropertyValue_InContainer(Player)==First);
+    Wanted->SetPropertyValue_InContainer(Player,false); Update();
+    check(!IsValid(First) && !Visual->GetObjectPropertyValue_InContainer(Player));
+    Wanted->SetPropertyValue_InContainer(Player,true); Update();
+    auto* Second = Cast<AActor>(Visual->GetObjectPropertyValue_InContainer(Player));
+    check(IsValid(Second));
+    Player->Destroy(); check(!IsValid(Second));
+    World->DestroyWorld(false);
+    GEngine->DestroyWorldContext(World);
+    UE_LOG(LogTemp,Display,TEXT("PissingFactor: Blueprint stream lifecycle passed: spawn, origin/owner, idle, failure latch, release, EndPlay; transient nonreplicated references"));
+}
 }
 
 UPFBuildCommandlet::UPFBuildCommandlet()
@@ -522,6 +686,7 @@ int32 UPFBuildCommandlet::Main(const FString& Params)
         TEXT("float r=length(UV*2-1); return Alpha*0.18*(1-smoothstep(0.1,1.0,r));"));
     PF::Material(TEXT("M_Ripple"), false,
         TEXT("float r=length(UV*2-1); return Alpha*(1-smoothstep(0.015,0.07,abs(r-0.75)));"));
+    PF::VerifyStreamLifecycle();
     UE_LOG(LogTemp, Display, TEXT("PissingFactor network actor and material generation complete."));
     return 0;
 }

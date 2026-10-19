@@ -45,16 +45,32 @@ by Unreal's decal lifetime fade. Late-discovered decals start at their remaining
 opacity. Rendering asset loads and cosmetic actors are skipped on dedicated
 servers. Cosmetic binding failures are isolated from continence updates.
 
-Prototype 4b creates streams through the reflected `BeginDeferredActorSpawnFromClass`
-and `FinishSpawningActor` signatures verified in the pinned game dump. It supplies
+Prototype 4b attempted stream creation through the reflected `BeginDeferredActorSpawnFromClass`
+and `FinishSpawningActor` signatures verified in the pinned game dump. It supplied
 the stream-origin transform, AlwaysSpawn collision handling and unit scale, and
-sets curve state before finishing construction. Partial actors are registered for
-cleanup immediately. Class types are checked on load; cached stream classes and
+set curve state before finishing construction and registered partial actors for
+cleanup. Class types are checked on load; cached stream classes and
 stain materials are revalidated before use so an idle Lua wrapper is not treated
 as an Unreal lifetime guarantee. The pinned loader's native
 [UWorld spawn wrapper](https://github.com/UE4SS-RE/RE-UE4SS/blob/c838a8ac/UE4SS/src/LuaType/LuaUWorld.cpp)
 does not expose collision handling or deferred initialization. The actual cause
 of the reported 4a rejection remains unproven pending in-game evidence.
+
+That 4b implementation was withdrawn after a first-use freeze. In prototype 4c,
+Lua publishes `PFStreamClass` and `PFStreamWanted` on the player network actor;
+these local fields are transient and not replicated. Its separate, unhooked
+Blueprint tick creates a local stream, retaining `PFStreamVisual` and status.
+Class/actor references are owned by Unreal. Lua observes the result on a later
+10 Hz update and supplies the curve; it never allocates or destroys a stream
+inside the driver hook. Release clears the request, the Blueprint destroys the
+stream, and its EndPlay also handles owner/world teardown. Failed spawns latch
+until release; a pending request times out after two seconds. Dedicated servers
+skip this graph and receive no cosmetic class assignment.
+
+`EnableEffects = false` gates environmental tracing/publishing on the host and
+all presentation initialization locally. It is the default for the prototype's
+relief-only baseline. Debug checkpoints identify the first trace/publish stages
+and the request/completion boundary when effects are explicitly enabled.
 
 Replicated action/impact state carries server time and expiration, so late
 joiners see only the remaining lifetime. Each client creates cosmetic visuals

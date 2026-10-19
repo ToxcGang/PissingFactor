@@ -31,6 +31,7 @@ function M.validate(source)
     end
     result.StainFadeSeconds = math.min(result.StainFadeSeconds, result.StainSeconds)
     result.Debug = source.Debug == true
+    result.EnableEffects = source.EnableEffects == true
     return result, warnings
 end
 

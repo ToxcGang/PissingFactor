@@ -1,28 +1,31 @@
 # Manual prototype test
 
-**Current build: prototype 4b (stream spawn fix).** This addresses prototype 4a's
-`Stream actor spawn failed` error with deferred spawning and asset revalidation.
-It also includes the earlier `IsDedicatedServer` fix. It retains
-the prototype 4 asset layout. Install the full package below to keep files together;
-upgrading from prototype 3 requires all three cooked files as well as Lua.
+**Current build: prototype 4c (Blueprint stream lifecycle).** Prototype 4b froze
+on first use and must not be treated as a stable fallback. This build removes
+Lua's deferred stream-spawn calls and uses the player Blueprint's own tick to
+create/release streams. The driver and network asset revision is now 5: replace
+all three cooked files as well as Lua. Old assets are rejected at startup.
 P and D-pad Left retain the prototype 3 controls. You perform all game/controller
 tests yourself; this is not a stable release.
 
-This build adds a visible arcing stream and fading solid-surface stains to the
-existing bathroom relief. Water effects, animations, in-game audio and settings/
+The experimental effects add an arcing stream and fading solid-surface stains to
+the existing bathroom relief. **Effects are off by default for the first test.**
+With `EnableEffects = false`, no arc trace, impact publishing, cosmetic asset
+load or rendering is performed. Water effects, animations, in-game audio and settings/
 rebinding are unfinished. Test walls and floors away from water first. Known
 liquid-volume bounds suppress stains conservatively, but do not establish exact
 water surfaces. Multiplayer acceptance remains scheduled last.
 
 ## Prepare
 
-1. Close Abiotic Factor before updating files. Extract `PissingFactor-1.0.0-prototype-4b.zip`
+1. Close Abiotic Factor before updating files. Extract `PissingFactor-1.0.0-prototype-4c.zip`
    into `steamapps/common/AbioticFactor`, following [installation](installation.md).
    Replace the Lua files and keep the `.pak`, `.utoc` and `.ucas` files together.
    The build tool's `PissingFactor-1.0.0-dev.zip` is also valid when its startup
    message and source commit match this revision.
 2. Open the installed `AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/config.lua`.
    Set `EnablePrototype = true` and `Debug = true`. The ZIP ships with both false.
+   Leave `EnableEffects = false` for the first stability and bathroom-meter tests.
    These settings take effect after restarting the game.
 3. Keep `PissingFactorProbe` disabled. Its separate F6 diagnostic conflicts with
    this prototype's F6 key. Its `enabled.txt` was renamed to `disabled.txt` during
@@ -34,14 +37,13 @@ water surfaces. Multiplayer acceptance remains scheduled last.
 ## First test: stability and visible status
 
 1. Enter normal gameplay in the disposable world. The startup log should include
-   `prototype 4b (stream spawn fix)` and `Prototype 4b ready`. If it only says
+   `prototype 4c (Blueprint stream lifecycle)` and `Prototype 4c ready`. If it only says
    `Waiting for BPModLoaderMod`, send that log before testing the ability.
 2. **Tap and release F6 once.** The mod should show a local status message in the
    game's text-message area, and write one diagnostic snapshot to `UE4SS.log`.
    Holding F6 should produce only one snapshot. The message is local only.
-   It should include `Effects ready` with stream/stain counts (zero while idle).
-   If it says `Effects unavailable`, report that reason before continuing; the
-   full error is also repeated in the F6 log snapshot.
+   It should include `Effects off (EnableEffects=false)`. The log should report
+   `Presentation enabled: false`; that is expected in this first phase.
 3. `Continence 75/75` (or any equal current/maximum pair) means there is no
    bathroom need yet. This is a valid diagnostic result; you do not need to wait
    for need to build for this stability test.
@@ -51,7 +53,7 @@ water surfaces. Multiplayer acceptance remains scheduled last.
 5. Hold **D-pad Left alone** briefly, then release it. With bathroom need available,
    continence should rise during the hold and stop on release. At maximum continence
    there is no bathroom need, so no stream or new stain should appear. With need
-   available, the visual stream should accompany relief. D-pad Left's ordinary
+   available, relief should work without a stream in this first phase. D-pad Left's ordinary
    gameplay action is consumed by the mod.
 6. Play normally for five minutes, then tap F6 once more.
    Report whether both status messages appeared and whether the game stayed
@@ -89,6 +91,12 @@ report the logs before running the rest of the checklist.
 
 ## Stream and surface stains
 
+Only after the relief-only stability test passes: close the game yourself, set
+`EnableEffects = true`, restart and reload the disposable world. On a host this
+switch enables environmental simulation; on each machine it also enables local
+rendering. F6 should now report `Effects ready`. No multiplayer test is needed at
+this stage. If the baseline failed, leave effects off and report that first.
+
 1. With bathroom need available, stand about one metre from a plain wall in a
    dry room. Hold P or D-pad Left and aim at the wall, then slightly down toward
    the floor. Expect a narrow yellow curved stream that stops at the first solid
@@ -113,12 +121,14 @@ report the logs before running the rest of the checklist.
 Send the first `Environmental effects disabled`, `Presentation unavailable` or
 `Presentation disabled` log line if relief works but visuals do not. These paths
 disable affected cosmetics without intentionally disabling bathroom relief.
-If stream creation fails again, include the new `Stream spawn begin failed` or
-`Stream spawn finish failed` message, which identifies the class and failing phase.
+If stream creation fails again, include `Blueprint stream spawn rejected` or
+`Blueprint stream request timed out`, plus the first-use debug checkpoints.
 Also include nearby `LogSpawn` entries from the game's separate
 `%LOCALAPPDATA%/AbioticFactor/Saved/Logs/AbioticFactor.log`. The old prototype 4a
-message did not distinguish the failing phase, and the available engine log did
-not explain that failure.
+message did not distinguish the failing phase. The 4b freeze log ended after its
+first relief update, with no completed spawn or Lua exception. The new debug
+checkpoints bracket arc tracing, impact publishing and state publishing; stream
+requests and successful Blueprint allocation also log once per world.
 Exact water boundaries and water effects are deferred; do not treat dry-surface
 success as passing the water acceptance gate.
 

@@ -83,12 +83,26 @@ tests cover deferred-spawn failures and partial-allocation cleanup, stale class
 and material references, and non-class asset rejection. They do not demonstrate
 that Unreal will accept the spawn in the game.
 
+The owner's next 2026-10-19 prototype 4b run **failed stability** and required
+Task Manager termination. At 17:04:23, F6 reported ready presentation/input and
+continence 60/75. The final mod line at 17:04:27 is relief from 60 to 60.9375;
+there is no completed stream spawn, Lua exception or corresponding engine reason.
+The exact hang point remains unproven. Private copies of the logs were preserved
+outside version control before another manual test can overwrite them.
+Prototype 4c removes Lua deferred stream spawning/destruction. A generated
+Blueprint tick/EndPlay owns local stream actors through transient, nonreplicated
+fields. Its actual graph is executed in a disposable headless Unreal authoring
+world and checks origin/owner, single allocation, failure latching, release and
+EndPlay cleanup. This is editor evidence, not game/UE4SS stability evidence.
+`EnableEffects` now defaults to false and skips all traces/impact publishing and
+presentation for a relief-only baseline; the owner performs the manual retest.
+
 Prototype 4 adds the original spline stream and solid-surface stains. Offline
 tests cover collision ordering, conservative water exclusion, arc duration,
 presentation expiry/fade, moving-surface references, allocation caps and cleanup.
 Unreal generation checks the Blueprint graphs and original mesh. These checks
 are not evidence of in-game visual quality or correct physical surfaces; the
-owner's prototype 4b manual retest is still pending. Prototype 3's recorded success
+owner's prototype 4c manual retest is still pending. Prototype 3's recorded success
 does not transfer automatically to the new build.
 
 | ID | Scenario | Acceptance |

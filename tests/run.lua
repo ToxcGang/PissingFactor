@@ -269,7 +269,7 @@ local function fixture()
         for _,r in ipairs(records) do alive[r.id]=true end
         for id in pairs(self.impacts) do if not alive[id] then self.impacts[id]=nil end end
     end
-    local s = Server.new(Config.validate({}),game,net)
+    local s = Server.new(Config.validate({EnableEffects=true}),game,net)
     local p=player(); p.valid=true
     local actor={owner=p}
     s:add("one",p,actor)
@@ -305,6 +305,20 @@ test("cosmetic collision failure does not disable authoritative relief",function
     near(p.current,1.25);equal(n.states[a].active,true);equal(next(n.impacts),nil)
     s:receive("one",a,message(2),0.1);s:tick(0.1,0.1)
     near(p.current,2.5)
+end)
+
+test("effects-off mode skips all environmental work while retaining relief",function()
+    local s,p,a,n,g=fixture()
+    s.config=Config.validate({})
+    equal(s.config.EnableEffects,false)
+    g.origin=function()error("No origin lookup allowed when effects are off")end
+    n.trace=function()error("No trace allowed when effects are off")end
+    n.publishImpact=function()error("No impact allocation allowed when effects are off")end
+    s:receive("one",a,message(),0);s:tick(0,0.1)
+    near(p.current,1.25);equal(n.states[a].active,true)
+    equal(next(n.impacts),nil)
+    s:receive("one",a,message(2,false),0.1);s:tick(0.1,0.1)
+    near(p.current,1.25);equal(n.states[a].active,false)
 end)
 test("server evicts impact actors before publishing at the world cap",function()
     local s,p,a,n=fixture();s.config.MaxStains=2
