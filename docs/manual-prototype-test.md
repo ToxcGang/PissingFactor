@@ -8,6 +8,11 @@ all three cooked files as well as Lua. Old assets are rejected at startup.
 P and D-pad Left retain the prototype 3 controls. You perform all game/controller
 tests yourself; this is not a stable release.
 
+The owner's short relief-only test passed on 2026-10-19. The next check for that
+same installation is the [effects phase](#stream-and-surface-stains); no new
+download is needed. This observation does not establish long-session stability
+or effects-enabled behavior.
+
 The experimental effects add an arcing stream and fading solid-surface stains to
 the existing bathroom relief. **Effects are off by default for the first test.**
 With `EnableEffects = false`, no arc trace, impact publishing, cosmetic asset

@@ -1,0 +1,101 @@
+{
+  "kind": "prototype-observations",
+  "version": "1.0.0",
+  "protocol": 1,
+  "prototype": "4c",
+  "date": "2026-10-19",
+  "timezone": "America/Denver",
+  "tester": "ToxcGang",
+  "sourceCommit": "54e80f949453b807183c9fe5fc21980923ad3ac8",
+  "package": "PissingFactor-1.0.0-prototype-4c.zip",
+  "packageSha256": "b28f2ffad9ac32e0429ad5157fd2a96147279cd87129b179a7ec4ff03e398565",
+  "cookedFiles": {
+    "PissingFactor.pak": "87a11e53ff9ea0c24e898ba55ff58705aa0873ee877e7141a49f65b0c8098906",
+    "PissingFactor.ucas": "726a01f12f43bb27d437418ccf372f910dd477b9f18b6482cef51d7ceed48702",
+    "PissingFactor.utoc": "6755e9a9dae2041371685940f44711d0e5e197d2c49a5db2daf57e13117e63b8"
+  },
+  "dependencies": {
+    "game": {
+      "name": "Abiotic Factor",
+      "platform": "Windows Steam",
+      "version": "1.4.0.28206",
+      "steamAppId": 427410,
+      "steamBuildId": 24343447
+    },
+    "unreal": {
+      "version": "5.4.4",
+      "changelist": 35576357
+    },
+    "build": {
+      "msvcToolset": "14.38.33130",
+      "msvcCompiler": "14.38.33145",
+      "windowsSdk": "10.0.26100.0"
+    },
+    "ue4ss": {
+      "bundleVersion": "1.22.0",
+      "runtimeVersion": "3.0.1-1012-gc838a8ac",
+      "url": "https://github.com/igromanru/AF-UE4SS/releases/download/1.22.0/UE4SS_v3.0.1-1012-gc838a8ac_Abiotic-Factor.zip",
+      "sha256": "51898e42324a30286062e7617e7dd92e3ec555d3f62545f76984646d5a9c6a33"
+    }
+  },
+  "configuration": {
+    "EnablePrototype": true,
+    "EnableEffects": false,
+    "Debug": true
+  },
+  "inputDevice": null,
+  "installedFilesMatchPackage": [
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/enabled.txt",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/main.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/bounds.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/client.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/collision.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/effects.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/game.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/input.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/log.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/preferences.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/presentation.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/pump.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/server.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/session.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/trajectory.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/transport.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/version.lua",
+    "AbioticFactor/Content/Paks/LogicMods/PissingFactor.pak",
+    "AbioticFactor/Content/Paks/LogicMods/PissingFactor.ucas",
+    "AbioticFactor/Content/Paks/LogicMods/PissingFactor.utoc"
+  ],
+  "localConfigExcludedFromHashComparison": true,
+  "userReport": "Alright it lets me do it without freezing with no effects.",
+  "observations": [
+    {
+      "id": "relief_only_stability",
+      "status": "passed",
+      "evidence": "The owner manually reported successful relief without freezing while effects were disabled. This is one short session, not long-session stability acceptance."
+    },
+    {
+      "id": "authority_relief",
+      "status": "observed",
+      "evidence": "UE4SS.log records eleven positive relief steps in three bursts from 60.0000 to 70.3125, beginning at 17:23:22.613 and ending at 17:23:44.115. This run did not reach the maximum of 75."
+    },
+    {
+      "id": "released_snapshots",
+      "status": "observed",
+      "evidence": "At 17:23:36.876 and 17:23:46.844, F6 reports held=false, active=false, reason=released, with continence 65.625/75 and 70.3125/75 respectively."
+    },
+    {
+      "id": "effects_disabled",
+      "status": "observed",
+      "evidence": "Startup identifies prototype 4c with EnableEffects=false; F6 reports Presentation enabled: false. No visuals were expected in this baseline."
+    }
+  ],
+  "notEstablished": [
+    "Input device used in this particular session; no keyboard/controller-specific acceptance is inferred",
+    "Long-session stability or the exact native cause of the earlier effects-enabled freezes",
+    "Full relief, empty-state behavior, bathroom emergencies, interruptions, disconnects or rebinding",
+    "Stability with EnableEffects=true, stream spawning/rendering, decals, water, animations or audio",
+    "Hosted/dedicated multiplayer or full release acceptance"
+  ],
+  "releaseValidated": false
+}

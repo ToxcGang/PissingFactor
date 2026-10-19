@@ -19,6 +19,8 @@ Initial release target. No stable release has been published.
   impact publishing, cosmetic asset loads and rendering. Add first-use debug
   checkpoints to locate hangs when effects are later enabled. The exact 4b hang
   location remains unproven; the new build still needs manual stability checks.
+  A subsequent short owner-run test confirmed relief without freezing with
+  effects off. Effects-enabled behavior and broader acceptance remain pending.
 
 - Prototype 4b: address the first-stream spawn failure reported on 2026-10-19.
   Use UE 5.4.4's reflected deferred spawn functions at the emitting player's

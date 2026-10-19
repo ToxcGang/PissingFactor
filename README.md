@@ -42,8 +42,10 @@ revalidates idle asset references and adds detailed failure diagnostics. Visible
 effects remain unverified. The subsequent prototype 4b run froze on first use;
 4c removes Lua's deferred-spawn calls, moves stream allocation and cleanup onto
 the player Blueprint's own tick/EndPlay, and defaults `EnableEffects` to false.
-First verify relief-only stability with that setting off, then follow the manual
-procedure for a separate effects test. The exact hang location is not proven.
+A short user-run 4c test confirmed relief without freezing with effects off;
+the log records continence rising from 60 to 70.3125 and released snapshots.
+Follow the manual procedure for the separate effects test. The exact earlier
+hang location and effects-enabled stability remain unproven.
 Known liquid-volume bounds conservatively
 suppress stains; exact water surfaces, water effects, animations, in-game audio,
 rebinding UI and multiplayer acceptance are unfinished. `EnablePrototype` defaults

@@ -95,14 +95,27 @@ fields. Its actual graph is executed in a disposable headless Unreal authoring
 world and checks origin/owner, single allocation, failure latching, release and
 EndPlay cleanup. This is editor evidence, not game/UE4SS stability evidence.
 `EnableEffects` now defaults to false and skips all traces/impact publishing and
-presentation for a relief-only baseline; the owner performs the manual retest.
+presentation for a relief-only baseline.
+
+The owner's short 2026-10-19 prototype 4c relief-only test passed: the user
+reported successful relief without freezing and no effects. The installed Lua/
+loader-marker files and all three containers match the prototype 4c ZIP (20 files,
+excluding local configuration). The log records eleven relief steps from 60 to
+70.3125 between 17:23:22 and 17:23:44. F6 snapshots at 17:23:36 and 17:23:46 show
+`held=false`, `active=false` and `reason=released`; presentation is disabled as
+expected. The input device was not specified for this run, and full relief was
+not reached. Exact package/source/container hashes and scoped observations are
+in the [prototype 4c observation record](../validation/prototype-4c-2026-10-19.json).
+This does not establish long-session stability, effects-enabled behavior, or a
+cause for the earlier hangs. The next manual check enables effects in this same
+tested build, following the [separate effects phase](manual-prototype-test.md#stream-and-surface-stains).
 
 Prototype 4 adds the original spline stream and solid-surface stains. Offline
 tests cover collision ordering, conservative water exclusion, arc duration,
 presentation expiry/fade, moving-surface references, allocation caps and cleanup.
 Unreal generation checks the Blueprint graphs and original mesh. These checks
 are not evidence of in-game visual quality or correct physical surfaces; the
-owner's prototype 4c manual retest is still pending. Prototype 3's recorded success
+owner's prototype 4c effects-enabled manual retest is still pending. Prototype 3's recorded success
 does not transfer automatically to the new build.
 
 | ID | Scenario | Acceptance |
