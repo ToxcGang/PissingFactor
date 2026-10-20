@@ -10,6 +10,7 @@
 #include "Engine/Engine.h"
 #include "MeshDescription.h"
 #include "StaticMeshAttributes.h"
+#include "StaticMeshResources.h"
 #include "EdGraph/EdGraph.h"
 #include "EdGraphSchema_K2.h"
 #include "Engine/Blueprint.h"
@@ -740,6 +741,45 @@ static void VerifyStreamLifecycle(bool RequireCold = false)
     check(IsValid(First) && First->GetClass()->GetPathName()==StreamPath && First->GetOwner()==Player);
     check(!First->GetIsReplicated() && First->GetActorLocation().Equals(FVector(10,20,100)));
     check(Status->GetPropertyValue_InContainer(Player)==2);
+    // Spawning alone does not establish that the generated stream graph moves
+    // usable geometry into the world. Execute its real tick at distant world
+    // coordinates and with vertical aim, matching the Lua presentation fields.
+    auto* Spline = First->FindComponentByClass<USplineMeshComponent>();
+    check(Spline && Spline->IsRegistered() && Spline->IsVisible());
+    UStaticMesh* Mesh = Spline->GetStaticMesh();
+    check(Mesh && Mesh->GetRenderData() && Mesh->GetRenderData()->LODResources.Num()>0);
+    check(Mesh->GetRenderData()->LODResources[0].GetNumTriangles()>0);
+    const auto VectorField = [&](const TCHAR* Name, const FVector& Value)
+    {
+        auto* Property = FindFProperty<FStructProperty>(First->GetClass(),Name);
+        check(Property); *Property->ContainerPtrToValuePtr<FVector>(First) = Value;
+    };
+    for (const bool Vertical : {false,true})
+    {
+        const FVector Start(12345,-23456,3456);
+        const FVector End = Start+(Vertical ? FVector(0,0,-250) : FVector(250,0,-100));
+        const FVector TangentA = Vertical ? FVector(0,0,-200) : FVector(250,0,0);
+        const FVector TangentB = Vertical ? FVector(0,0,-300) : FVector(250,0,-200);
+        for (const FString Prefix : {TEXT("PFTarget"),TEXT("PFDisplay")})
+        {
+            VectorField(*(Prefix+TEXT("Start")),Start); VectorField(*(Prefix+TEXT("End")),End);
+            VectorField(*(Prefix+TEXT("TangentA")),TangentA); VectorField(*(Prefix+TEXT("TangentB")),TangentB);
+        }
+        VectorField(TEXT("PFUp"),Vertical ? FVector(0,1,0) : FVector(0,0,1));
+        First->SetActorHiddenInGame(false);
+        float Delta = 1.f/60.f;
+        First->ProcessEvent(First->FindFunctionChecked(TEXT("ReceiveTick")),&Delta);
+        // Commandlets have no live render proxy to consume the normal deferred
+        // bounds update; calculate it explicitly after executing the real graph.
+        Spline->UpdateBounds();
+        check(First->GetActorLocation().Equals(Start));
+        check(Spline->GetStartPosition().IsNearlyZero() && Spline->GetEndPosition().Equals(End-Start));
+        check(Spline->GetStartTangent().Equals(TangentA) && Spline->GetEndTangent().Equals(TangentB));
+        const FBox Bounds = Spline->Bounds.GetBox().ExpandBy(1.f);
+        check(Bounds.IsInsideOrOn(Start) && Bounds.IsInsideOrOn(End));
+        check(Spline->Bounds.SphereRadius<600.f && !First->IsHidden());
+    }
+    UE_LOG(LogTemp,Display,TEXT("PissingFactor: stream geometry passed: render triangles, registered visible spline, real tick, world position, vertical aim, bounded curve"));
     CollectGarbage(RF_NoFlags);
     check(IsValid(First) && IsValid(Class->GetObjectPropertyValue_InContainer(Player)));
     check(IsValid(Material->GetObjectPropertyValue_InContainer(Player)));

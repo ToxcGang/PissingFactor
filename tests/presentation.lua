@@ -22,7 +22,11 @@ local function near(a,b)assert(math.abs(a-b)<0.000001,tostring(a).." ~= "..tostr
 function world:SpawnActor()error("Lua must never spawn a cosmetic stream actor")end
 local function streamActor()
     local o={K2_DestroyActor=function(self)self.destroyed=true end,
-        SetActorHiddenInGame=function(self,hidden)self.hidden=hidden end,hidden=true}
+        SetActorHiddenInGame=function(self,hidden)self.hidden=hidden;self.bHidden=hidden end,hidden=true}
+    o.PFStreamMesh={GetStartPosition=function()return {X=0,Y=0,Z=0}end,
+        GetEndPosition=function()return {X=100,Y=0,Z=0}end,
+        K2_GetComponentLocation=function()return {X=10,Y=20,Z=100}end,
+        IsVisible=function()return true end}
     spawned[#spawned+1]=o
     return o
 end
@@ -99,7 +103,7 @@ local Presentation=require("pf.presentation")
 dedicated=true
 assert(Presentation.new(world)==nil and loads==0,"Dedicated server must not load visual assets")
 dedicated=false
-local p=Presentation.new(world)
+local p=Presentation.new(world,true)
 assert(p and loads==0 and p.streamClass==nil and p.stainMaterial==nil,
     "Presentation must never keep a Lua cache of cosmetic asset wrappers")
 local player=source(1)
@@ -114,6 +118,7 @@ now=0.05;p:update(now);assert(#spawned==0 and requests==0)
 engineTick();p:update(now)
 local stream=p.streams["1"].visual
 assert(not stream.hidden and stream.PFDisplayStart.Z==100)
+assert(p.created==1 and p.lastStream.length==100 and p.lastStream.visible and not p.lastStream.hidden)
 assert(requests==1,"Repeated Lua updates must not duplicate a pending request")
 assert(loads==2 and player.PFStreamClass and player.PFStainMaterial,"Only the engine tick may load cosmetic assets")
 near(stream.PFTargetTangentA.X,110)
@@ -128,6 +133,9 @@ player.PFActive=false;now=0.2;p:update(now)
 assert(not player.PFStreamWanted and not stream.destroyed,"Lua must request release without destroying actors")
 engineTick()
 assert(stream.destroyed and next(p.streams)==nil,"Release must remove the stream")
+assert(p.lastStream.length==100 and p.lastStream.position.Z==100,
+    "F6 must retain plain geometry diagnostics after the short-lived actor is gone")
+stream=nil
 player.PFActive=true;player.PFServerTime=-5
 p:update(now);assert(next(p.streams)==nil,"Stale network state cannot leave an abandoned stream")
 player.PFServerTime=now;player.PFHasPath=false
@@ -139,6 +147,11 @@ player.PFHasPath=true
 p:update(now)
 assert(player.PFStreamClass==oldClass and loads==oldLoads,"Lua must not validate/reload a cached class")
 engineTick();p:update(now)
+local observed=p.lastStream
+p.streams["1"].visual.PFStreamMesh=nil
+p:update(now)
+assert(p.lastStream==observed and p.lastStreamError,
+    "Optional diagnostic failures must not disable presentation or replace the last good sample")
 player.PFActive=false;p:update(now)
 engineTick()
 assert(spawned[#spawned].destroyed)

@@ -15,7 +15,7 @@ local function actorClass(driver,name)
     -- They remain alive through world GC while the driver/transport is in use.
     local object=Game.read(driver,name)
     assert(Game.valid(object) and object:IsClass(),
-        "Missing engine-owned "..name.."; install all prototype 4d cooked files")
+        "Missing engine-owned "..name.."; install all prototype 4e cooked files")
     return object
 end
 
@@ -45,7 +45,7 @@ function Transport:spawnPlayer(player)
     assert(Game.valid(actor), "Cannot spawn BP_PFPlayer")
     if Game.read(actor,"PFPresentationRevision")~=6 then
         actor:K2_DestroyActor()
-        error("Old network assets: install all three cooked files from prototype 4d")
+        error("Old network assets: install all three cooked files from prototype 4e")
     end
     actor:SetOwner(controller)
     actor.PFPawn=player
@@ -82,7 +82,19 @@ function Transport:publishState(actor,session,path,now)
         actor:K2_SetActorLocation(path.points[1],false,{},true)
     end
     actor:ForceNetUpdate()
-    self.states[actor]={active=session.active,reason=session.reason}
+    local lastPath=previous and previous.lastPath
+    if path and self.config.Debug then
+        local a,b=path.points[1],path.endpoint
+        lastPath={duration=path.duration,kind=path.hit and path.hit.kind or "range_limit",
+            origin={X=a.X,Y=a.Y,Z=a.Z},endpoint={X=b.X,Y=b.Y,Z=b.Z},
+            length=math.sqrt((a.X-b.X)^2+(a.Y-b.Y)^2+(a.Z-b.Z)^2)}
+        Log.once("first_arc:"..tostring(self)..tostring(actor:GetAddress()),string.format(
+            "First arc: hit=%s duration=%.4fs chord=%.2fcm origin=(%.2f,%.2f,%.2f) end=(%.2f,%.2f,%.2f)",
+            lastPath.kind,lastPath.duration,lastPath.length,a.X,a.Y,a.Z,b.X,b.Y,b.Z))
+    end
+    -- Retain scalar/vector diagnostics after release/empty; short actions may
+    -- be over before the player can press F6. No additional UObjects are held.
+    self.states[actor]={active=session.active,reason=session.reason,lastPath=lastPath}
 end
 
 function Transport:stop(actor,reason)

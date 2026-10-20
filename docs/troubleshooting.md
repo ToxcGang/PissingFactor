@@ -43,7 +43,7 @@ does not demonstrate successful authoritative relief.
 
 ## Relief works but the stream or stains are missing
 
-In prototype 4d, `EnableEffects = false` intentionally runs relief-only mode.
+In prototype 4e, `EnableEffects = false` intentionally runs relief-only mode.
 F6 reports `Effects off`; missing visuals are expected. Keep that setting for
 the first stability test after the 4b freeze. The separate effects test requires
 closing the game, enabling the switch, and restarting.
@@ -73,10 +73,12 @@ narrows the boundary to subsequent presentation setup, without proving a native
 cause. Prototype 4d removes all cosmetic asset loading/caching and UClass writes
 from Lua; Blueprint resolves soft paths and holds strong references on its own
 tick. Fresh-process authoring checks validate native loading, spawn and GC
-retention. In-game stability still requires the owner's retest.
+retention. The 4d owner-run session did not freeze and created a stream actor,
+but no effects were visible. The longer attempt ended at full continence in
+about 0.3 seconds; that alone does not establish why the effects were missing.
 
-Install the entire prototype 4d package, including all three cooked containers.
-Confirm startup says `prototype 4d (Blueprint asset ownership)`. When continence is already
+Install the entire prototype 4e package, including all three cooked containers.
+Confirm startup says `prototype 4e (retained visual diagnostics)`. When continence is already
 at maximum, no stream or fresh stain is expected. Look down toward a nearby wall
 or floor in a dry room while holding P or D-pad Left with need available.
 
@@ -90,13 +92,20 @@ bounds suppress stains; water clouds/ripples are not implemented in this build.
 For a new spawn failure, also copy nearby `LogSpawn` messages from
 `%LOCALAPPDATA%/AbioticFactor/Saved/Logs/AbioticFactor.log`. A successful first
 stream logs `First local stream actor created`; F6 while held records its count.
+In 4e, F6 also retains the created-stream count, `Last arc` and `Last stream
+geometry` after release. Include those lines when reporting no effects. With
+debugging enabled, the arc reports its hit classification/duration/coordinates;
+the geometry sample reports the native spline length and visibility fields.
+Neither is proof that the GPU drew the stream. For a longer observation, set
+`ReliefSeconds = 60`, restart and wait until F6 reports at least three seconds
+remaining before holding P/Left and looking down. Restore the default 8 afterward.
 
 ## Shortcut drops items or changes hotbar slots
 
 Stop testing the ability and report the input bindings and controller model.
 The controller interception check is a release requirement. Use D-pad Left
 alone. The mod must leave LB/L1 inventory cycling with the game. Confirm startup
-logs say `prototype 4d (Blueprint asset ownership)` and replace all three cooked files as well
+logs say `prototype 4e (retained visual diagnostics)` and replace all three cooked files as well
 as Lua when updating. When using Steam Input, check whether the controller is
 being translated into keyboard presses and avoid mapping the same button twice.
 

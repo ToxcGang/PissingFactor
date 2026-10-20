@@ -1,0 +1,98 @@
+{
+  "kind": "prototype-observations",
+  "version": "1.0.0",
+  "protocol": 1,
+  "prototype": "4d",
+  "date": "2026-10-19",
+  "timezone": "America/Denver",
+  "tester": "ToxcGang",
+  "sourceCommit": "a28ac756f0181c236652ac821a07889f7205f148",
+  "package": "PissingFactor-1.0.0-prototype-4d.zip",
+  "packageSha256": "51c27f4dbe399cf4a309793ae30ffb4cec154a483b565ecabd889ae83b81cfe8",
+  "configuration": {
+    "EnablePrototype": true,
+    "EnableEffects": true,
+    "Debug": true
+  },
+  "cookedFiles": {
+    "PissingFactor.pak": "0d0f04af243b05e60b8f1dcbaf828cafbb15ff9f346041cd439499450c206102",
+    "PissingFactor.ucas": "d4ab3d6ae68fe231457bb5f3a2a82b729f1e72df0572308ef74a3ade7ca887ae",
+    "PissingFactor.utoc": "641b9b06c97cb135e8995c6ef0687dc115b8a9bcb32f6abfeea0d9ee28ab7ad7"
+  },
+  "dependencies": {
+    "game": {
+      "name": "Abiotic Factor",
+      "platform": "Windows Steam",
+      "version": "1.4.0.28206",
+      "steamAppId": 427410,
+      "steamBuildId": 24343447
+    },
+    "unreal": {
+      "version": "5.4.4",
+      "changelist": 35576357
+    },
+    "build": {
+      "msvcToolset": "14.38.33130",
+      "msvcCompiler": "14.38.33145",
+      "windowsSdk": "10.0.26100.0"
+    },
+    "ue4ss": {
+      "bundleVersion": "1.22.0",
+      "runtimeVersion": "3.0.1-1012-gc838a8ac",
+      "url": "https://github.com/igromanru/AF-UE4SS/releases/download/1.22.0/UE4SS_v3.0.1-1012-gc838a8ac_Abiotic-Factor.zip",
+      "sha256": "51898e42324a30286062e7617e7dd92e3ec555d3f62545f76984646d5a9c6a33"
+    }
+  },
+  "installedFilesMatchPackage": [
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/enabled.txt",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/main.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/bounds.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/client.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/collision.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/effects.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/game.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/input.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/log.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/preferences.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/presentation.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/pump.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/server.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/session.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/trajectory.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/transport.lua",
+    "AbioticFactor/Binaries/Win64/ue4ss/Mods/PissingFactor/scripts/pf/version.lua",
+    "AbioticFactor/Content/Paks/LogicMods/PissingFactor.pak",
+    "AbioticFactor/Content/Paks/LogicMods/PissingFactor.ucas",
+    "AbioticFactor/Content/Paks/LogicMods/PissingFactor.utoc"
+  ],
+  "localConfigExcludedFromHashComparison": true,
+  "userReport": "The game didn't freeze but no effects were shown.",
+  "observations": [
+    {
+      "id": "short_effects_enabled_session",
+      "status": "observed",
+      "evidence": "Owner reports no freeze. Startup/F6 identify prototype 4d, enabled presentation and material=2. The game log records normal return to menu and exit. This is not a long-session stability pass."
+    },
+    {
+      "id": "native_stream_allocation",
+      "status": "observed",
+      "evidence": "At 18:49:24 the request was queued. At 18:49:43.4641135 the log records First local stream actor created by Blueprint, without a presentation exception."
+    },
+    {
+      "id": "short_relief",
+      "status": "observed",
+      "evidence": "One relief step at 18:49:24 raises 71.25 to 72.1875. Three steps at 18:49:43.361-.572 raise 72.1875 to 75. The longer attempt reaches maximum in about 0.3 seconds. Later F6 reports released/inactive and zero streams/stain records."
+    },
+    {
+      "id": "visible_output",
+      "status": "failed",
+      "evidence": "The owner saw no effects. A created actor alone does not establish rendering. No solid impact publication or stain record is logged; collision classification and actual curve geometry were not retained in this build."
+    }
+  ],
+  "notEstablished": [
+    "The reason no effects were visible",
+    "Successful solid-surface impacts/stains",
+    "Long-session stability, water, animations or multiplayer acceptance"
+  ],
+  "releaseValidated": false
+}

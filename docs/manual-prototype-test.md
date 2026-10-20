@@ -1,16 +1,16 @@
 # Manual prototype test
 
-**Current build: prototype 4d (Blueprint asset ownership).** The 4c relief-only
-test passed, but enabling effects froze the game after tracing/state publication
-and before the stream request was logged. This build moves cosmetic asset
-loading and ownership into Blueprint; Lua only supplies ordinary request/state
-fields. The driver and network asset revision is now 6: replace
-all three cooked files as well as Lua. Old assets are rejected at startup.
+**Current build: prototype 4e (retained visual diagnostics).** The 4d effects test
+did not freeze and created a stream actor, but no effects were visible. The longer
+attempt ended at full continence in about 0.3 seconds. This build retains the last
+collision and stream geometry for F6 after release, and reports the expected
+relief time. Blueprint still owns all cosmetic loads/spawns; asset revision 6
+is unchanged. Install the full package, including all three cooked files and Lua.
 P and D-pad Left retain the prototype 3 controls. You perform all game/controller
 tests yourself; this is not a stable release.
 
 The owner's short relief-only test passed on 2026-10-19 in prototype 4c. Prototype
-4d requires the new complete package. Briefly reconfirm relief with effects off,
+4e requires the new complete package. Briefly reconfirm relief with effects off,
 then proceed to the [effects phase](#stream-and-surface-stains). The earlier
 observation does not establish stability in this new build or with effects on.
 
@@ -24,7 +24,7 @@ water surfaces. Multiplayer acceptance remains scheduled last.
 
 ## Prepare
 
-1. Close Abiotic Factor before updating files. Extract `PissingFactor-1.0.0-prototype-4d.zip`
+1. Close Abiotic Factor before updating files. Extract `PissingFactor-1.0.0-prototype-4e.zip`
    into `steamapps/common/AbioticFactor`, following [installation](installation.md).
    Replace the Lua files and keep the `.pak`, `.utoc` and `.ucas` files together.
    The build tool's `PissingFactor-1.0.0-dev.zip` is also valid when its startup
@@ -43,7 +43,7 @@ water surfaces. Multiplayer acceptance remains scheduled last.
 ## First test: stability and visible status
 
 1. Enter normal gameplay in the disposable world. The startup log should include
-   `prototype 4d (Blueprint asset ownership)` and `Prototype 4d ready`. If it only says
+   `prototype 4e (retained visual diagnostics)` and `Prototype 4e ready`. If it only says
    `Waiting for BPModLoaderMod`, send that log before testing the ability.
 2. **Tap and release F6 once.** The mod should show a local status message in the
    game's text-message area, and write one diagnostic snapshot to `UE4SS.log`.
@@ -114,9 +114,21 @@ spawn; the presentation error explains which request failed.
    waist-height origin; custom hand/body animations are not present yet.
    The first successfully created stream writes `First local stream actor created`
    to the log. Tap F6 while still holding to capture the live stream count.
+   For this visibility investigation, set `ReliefSeconds = 60` before starting
+   the game, then wait until F6 reports at least three seconds of relief remaining.
+   This deliberately slows the stat change for observation; it does not create
+   bathroom need or allow use while empty. Restore `ReliefSeconds = 8` afterward.
+   At 71.25/75, the default lasts only 0.4 seconds; the temporary value lasts
+   three seconds. Look down enough to see the waist-height stream throughout.
 2. Release the button. The stream should disappear promptly; the yellow impact
    stain should remain. Tap F6: the log includes presentation status and local
    stream/stain counts. Releasing should leave zero active stream visuals.
+   Prototype 4e also keeps `Last arc`, `Stream actors created this world` and
+   `Last stream geometry` after release. Copy these lines even if the current
+   stream count is zero. The last arc's `hit` distinguishes `solid`, `overlap`,
+   `character`, `unverified_water` and `range_limit`; only solid hits create
+   stains in this build. The geometry sample is CPU state, not proof of pixels
+   rendered. Report `Stream diagnostic unavailable` if present.
 3. Time one isolated group of stains from the last impact. It should stay visible
    for roughly 50 seconds, fade during the final ten seconds, and be gone at
    about 60 seconds. Additional impacts at the same spot create younger stains.

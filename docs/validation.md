@@ -128,12 +128,29 @@ The driver also holds the core player/input/impact classes, with retention
 checked after GC in the authoring world. This protects the idle impact class;
 it does not establish that a real game impact has succeeded.
 
+The owner's 2026-10-19 prototype 4d run did not freeze, but **failed visible
+output**. The installed 20 runtime/container files match the tested ZIP, excluding
+local configuration; effects and debugging were enabled. F6 reports native
+material status 2 and the log records the first created stream actor at
+18:49:43.4641135. The longer attempt raised continence from 72.1875 to 75 over
+about 0.3 seconds. No solid impact publication or stain record is logged. Short
+duration is a possible visibility factor, not an established cause. See the
+[prototype 4d observation record](../validation/prototype-4d-2026-10-19.json).
+This establishes neither rendered pixels nor long-session stability.
+
+Prototype 4e retains plain last-arc/stream geometry diagnostics after release so
+the owner can inspect an already completed action. F6 also shows estimated relief
+time. The manual procedure temporarily uses `ReliefSeconds = 60` for observation,
+then restores 8. New headless checks execute the actual stream tick and inspect
+render triangles, spline positions/tangents and bounds for horizontal/vertical
+arcs at distant world coordinates. They do not exercise the game's GPU output.
+
 Prototype 4 adds the original spline stream and solid-surface stains. Offline
 tests cover collision ordering, conservative water exclusion, arc duration,
 presentation expiry/fade, moving-surface references, allocation caps and cleanup.
 Unreal generation checks the Blueprint graphs and original mesh. These checks
 are not evidence of in-game visual quality or correct physical surfaces; the
-owner's prototype 4d manual retest is still pending. Prototype 3's recorded success
+owner's prototype 4e visual retest is still pending. Prototype 3's recorded success
 does not transfer automatically to the new build.
 
 | ID | Scenario | Acceptance |

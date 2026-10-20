@@ -58,7 +58,7 @@ Menus retain the game's navigation. The current prototype has fixed bindings;
 local rebinding and audiovisual preferences await the settings UI. The host's
 `config.lua` controls relief rate, range, and effect lifetimes.
 
-Prototype 4d also has `EnableEffects = false` by default for relief-only testing.
+Prototype 4e also has `EnableEffects = false` by default for relief-only testing.
 Keep it off for the first stability test. On the host, enabling it turns on arc
 traces and environmental publishing; each machine also uses it to opt into local
 rendering. Restart after changing it. Follow the staged

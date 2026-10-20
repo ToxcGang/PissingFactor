@@ -44,6 +44,10 @@ documentation links, and packaging rules. They do not simulate Unreal RPCs.
    Prototype 4d also checks native soft-path asset loading and retention across
    garbage collection, then runs validation in a second process with the stream
    class initially unloaded. Both runs must succeed before cooking.
+   Prototype 4e executes the stream actor's actual tick, verifies nonempty render
+   geometry, spline coordinates/tangents and world bounds, including vertical
+   aim and distant world positions. Headless commandlets refresh bounds explicitly
+   because they have no live render proxy; this still does not verify GPU output.
    The full-release asset manifest deliberately requires unfinished resources too.
 5. Commit reviewed original assets, then run the same command with `--stage cook`.
    Only the mod's namespace is packed. No engine, editor, or game assets are copied.

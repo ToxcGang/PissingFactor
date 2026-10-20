@@ -9,6 +9,14 @@ This does not constitute a playable 1.0.0 release.
 
 Initial release target. No stable release has been published.
 
+- Prototype 4e: retain the last arc hit, duration and coordinates, created-stream
+  count, and live spline geometry/visibility as plain diagnostic values after
+  release. F6 shows the remaining relief time to identify very short attempts.
+  Add native geometry checks that execute the actual stream tick at distant
+  world coordinates and with vertical aim. Record the owner's 4d session: no
+  freeze, a created stream actor, but no visible effects. Visible output remains
+  unverified; the new build provides diagnostics, not a confirmed rendering fix.
+
 - Prototype 4d: move cosmetic class/material loading entirely into the player
   Blueprint's unhooked tick. Soft paths resolve into engine-owned references;
   Lua presentation no longer loads, caches or writes cosmetic UClass objects.

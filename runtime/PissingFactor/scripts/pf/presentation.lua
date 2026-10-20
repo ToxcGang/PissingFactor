@@ -15,12 +15,31 @@ local function releaseStream(entry)
 end
 local function destroyDecal(o) if Game.valid(o) then o:K2_DestroyComponent(o) end end
 
-function Presentation.new(world)
+function Presentation.new(world,debug)
     -- No cosmetic asset loads, actors, materials or discovery on a dedicated server.
     -- IsDedicatedServer belongs to KismetSystemLibrary in the pinned game dump.
     -- GameplayStatics returns a non-callable TrivialObject for this missing member.
     if UE.GetKismetSystemLibrary():IsDedicatedServer(world) then return nil end
-    return setmetatable({world=world,streams={},stains={},players={},impacts={}},Presentation)
+    return setmetatable({world=world,debug=debug==true,created=0,
+        streams={},stains={},players={},impacts={}},Presentation)
+end
+
+function Presentation:observeStream(entry)
+    if not self.debug or not Game.valid(entry.visual) then return end
+    -- Read the live component only while its actor is owned by Blueprint.
+    -- Store plain values so F6 can show the last result after it is destroyed.
+    local ok,sample=pcall(function()
+        local mesh=entry.visual.PFStreamMesh
+        assert(Game.valid(mesh),"stream mesh component unavailable")
+        local a,b=mesh:GetStartPosition(),mesh:GetEndPosition()
+        local position=mesh:K2_GetComponentLocation()
+        local hidden=entry.visual.bHidden
+        if type(hidden)~="boolean" then hidden="unavailable" end
+        return {visible=mesh:IsVisible(),hidden=hidden,
+            length=math.sqrt((a.X-b.X)^2+(a.Y-b.Y)^2+(a.Z-b.Z)^2),
+            position=vector(position)}
+    end)
+    if ok then self.lastStream=sample;self.lastStreamError=nil else self.lastStreamError=tostring(sample) end
 end
 
 function Presentation:reset()
@@ -57,6 +76,7 @@ function Presentation:stream(actor,entry,now)
             return entry
         end
         entry.visual=actor.PFStreamVisual
+        self.created=self.created+1
         Log.once("stream_created:"..tostring(self),"First local stream actor created by Blueprint")
     end
     local visual=entry.visual
@@ -72,6 +92,7 @@ function Presentation:stream(actor,entry,now)
     visual.PFTargetStart=start;visual.PFTargetEnd=finish
     visual.PFTargetTangentA=tangentA;visual.PFTargetTangentB=tangentB
     visual:SetActorHiddenInGame(false)
+    self:observeStream(entry)
     entry.duration=duration
     entry.origin=start
     return entry
@@ -84,7 +105,7 @@ function Presentation:stain(actor,remaining)
     if actor.PFAttached and not Game.valid(surface) then return nil end
     local source=self.materialSource
     if not Game.valid(source) then return nil end
-    assert(source.PFMaterialStatus~=3,"Blueprint stain material load rejected; install all prototype 4d cooked files")
+    assert(source.PFMaterialStatus~=3,"Blueprint stain material load rejected; install all prototype 4e cooked files")
     local stainMaterial=source.PFStainMaterial
     if not Game.valid(stainMaterial) then return nil end
     local attached=actor.PFAttached
@@ -146,10 +167,13 @@ function Presentation:update(now)
     end
     self.materialSource=materialSource
     if materialSource then
-        assert(materialSource.PFMaterialStatus~=3,"Blueprint stain material load rejected; install all prototype 4d cooked files")
+        assert(materialSource.PFMaterialStatus~=3,"Blueprint stain material load rejected; install all prototype 4e cooked files")
     end
     for id,entry in pairs(self.streams) do
-        if not streams[id] then releaseStream(entry);self.streams[id]=nil end
+        if not streams[id] then
+            self:observeStream(entry)
+            releaseStream(entry);self.streams[id]=nil
+        end
     end
     local count,desired=0,{}
     for _,actor in ipairs(self.impacts) do

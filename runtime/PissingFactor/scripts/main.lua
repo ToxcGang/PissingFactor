@@ -14,7 +14,7 @@ local Presentation=require("pf.presentation")
 local configSource=dofile(directory.."../config.lua")
 local config,warnings=Config.validate(configSource)
 for _,warning in ipairs(warnings) do Log.info(warning) end
-Log.info("Loading "..Version.mod..", protocol "..Version.protocol..", prototype 4d (Blueprint asset ownership)")
+Log.info("Loading "..Version.mod..", protocol "..Version.protocol..", prototype 4e (retained visual diagnostics)")
 
 if configSource.EnablePrototype~=true then
     Log.info("Development build: gameplay disabled. EnablePrototype is only for disposable-world integration testing.")
@@ -57,7 +57,7 @@ local function reset()
 end
 
 local function diagnostics()
-    Log.info("Diagnostic snapshot "..Version.mod.." / protocol "..Version.protocol.." / prototype 4d (Blueprint asset ownership)")
+    Log.info("Diagnostic snapshot "..Version.mod.." / protocol "..Version.protocol.." / prototype 4e (retained visual diagnostics)")
     Log.info("Presentation enabled: "..tostring(presentation~=nil))
     if presentationError then Log.info("Presentation error: "..presentationError) end
     local effects=config.EnableEffects and "Effects disabled on dedicated server." or "Effects off (EnableEffects=false)."
@@ -68,6 +68,14 @@ local function diagnostics()
         end
         for _ in pairs(presentation.stains or {}) do stains=stains+1 end
         Log.info("Local visuals: "..streams.." stream(s), "..stains.." stain record(s), "..pending.." pending stream(s)")
+        Log.info("Stream actors created this world: "..tostring(presentation.created or 0))
+        local sample=presentation.lastStream
+        if sample then
+            local p=sample.position
+            Log.info(string.format("Last stream geometry: visible=%s hidden=%s chord=%.2fcm position=(%.2f,%.2f,%.2f)",
+                tostring(sample.visible),tostring(sample.hidden),sample.length,p.X,p.Y,p.Z))
+        end
+        if presentation.lastStreamError then Log.info("Stream diagnostic unavailable: "..presentation.lastStreamError) end
         effects=string.format("Effects ready: %d stream(s), %d stain record(s), %d pending.",streams,stains,pending)
         if Game.valid(presentation.materialSource) then
             local source=presentation.materialSource
@@ -87,6 +95,13 @@ local function diagnostics()
                 Log.info(string.format("Session %d: ready=%s held=%s active=%s sequence=%d reason=%s continence=%.4f/%.4f",
                     count,tostring(s.ready),tostring(s.held),tostring(s.active),s.sequence,s.reason,
                     entry.player.CurrentContinence,entry.player.MaxContinence))
+                local state=transport.states and transport.states[entry.actor]
+                local arc=state and state.lastPath
+                if arc then
+                    local a,b=arc.origin,arc.endpoint
+                    Log.info(string.format("Last arc: hit=%s duration=%.4fs chord=%.2fcm origin=(%.2f,%.2f,%.2f) end=(%.2f,%.2f,%.2f)",
+                        arc.kind,arc.duration,arc.length,a.X,a.Y,a.Z,b.X,b.Y,b.Z))
+                end
             end
         end
     end
@@ -96,8 +111,9 @@ local function diagnostics()
         local current,maximum=client.player.CurrentContinence,client.player.MaxContinence
         local reason=stringValue(client.actor.PFReason)
         local empty=current>=maximum and " No bathroom need yet." or " Hold P or D-pad Left to test relief."
-        message=string.format("Continence %.1f/%.1f; input %s; %s.%s",current,maximum,
-            client.enabled and "enabled" or "blocked",reason,empty)
+        message=string.format("Continence %.1f/%.1f; input %s; %s.%s Relief time about %.1fs.",current,maximum,
+            client.enabled and "enabled" or "blocked",reason,empty,
+            maximum>0 and math.max(0,(maximum-current)/maximum*config.ReliefSeconds) or 0)
     end
     if not Game.showStatus(localController,message.." "..effects) then
         Log.once("status_ui","Local status message unavailable; F6 results are in UE4SS.log")
@@ -190,14 +206,14 @@ local function initialize(actor)
     local installed=stringValue(instance.PlayerVersionString)
     assert(installed==Version.game,"Unsupported game version: "..installed.."; expected "..Version.game)
     assert(Game.read(actor,"PFPrototypeRevision")==6,
-        "Old ModActor assets: install all three cooked files from prototype 4d")
+        "Old ModActor assets: install all three cooked files from prototype 4e")
     world=actor:GetWorld()
     transport=Transport.new(world,config,actor)
     driver=actor
     server=Server.new(config,Game,transport)
     pump=Pump.new(config.TickSeconds)
     if config.EnableEffects then
-        local visualOk,visual=pcall(Presentation.new,world)
+        local visualOk,visual=pcall(Presentation.new,world,config.Debug)
         if visualOk then presentation=visual
         else
             presentationError=tostring(visual)
@@ -212,7 +228,7 @@ local function initialize(actor)
     -- Blueprint events only store key state. Read it on the 10 Hz actor tick;
     -- do not reenter Lua or dispatch native gameplay actions from input events.
     register(driverPath..":ReceiveTick",heartbeat)
-    Log.info("Prototype 4d ready; hold P or D-pad Left. EnableEffects="..tostring(config.EnableEffects)..". Tap F6 for local status.")
+    Log.info("Prototype 4e ready; hold P or D-pad Left. EnableEffects="..tostring(config.EnableEffects)..". Tap F6 for local status.")
 end
 
 -- BPModLoaderMod creates ModActor in each world. Both callbacks below already
