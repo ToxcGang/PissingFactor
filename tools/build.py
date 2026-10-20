@@ -24,6 +24,8 @@ def build(engine, stage, prototype=False):
         run([engine / "Engine/Build/BatchFiles/Build.bat", "AbioticFactorEditor", "Win64",
              "Development", PROJECT, "-WaitMutex", "-NoHotReloadFromIDE"])
         run([editor, PROJECT, "-run=PFBuild", "-unattended", "-nop4", "-stdout"])
+        # A fresh process validates loading without the generator's in-memory assets.
+        run([editor, PROJECT, "-run=PFBuild", "-ValidateOnly", "-unattended", "-nop4", "-stdout"])
     if stage in {"cook", "all"}:
         source_content = PROJECT.parent / "Content/Mods/PissingFactor"
         packages = ["/Game/Mods/PissingFactor/" + p.relative_to(source_content).with_suffix("").as_posix()

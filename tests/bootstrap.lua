@@ -23,7 +23,7 @@ function driver:GetClass()
     return {GetFullName=function()return "BlueprintGeneratedClass /Game/Mods/PissingFactor/ModActor.ModActor_C" end}
 end
 driver.PFHeartbeatSeen=false
-driver.PFPrototypeRevision=5
+driver.PFPrototypeRevision=6
 network.PFReason="released"
 local transport={}
 function transport:now() return now end
@@ -103,7 +103,7 @@ assert(logs[#logs]:find("Old ModActor assets",1,true),"Old assets need an action
 
 -- Cosmetics can fail while relief keeps working. F6 must repeat the cause after
 -- a world change even when the one-time startup log would be suppressed.
-driver.PFPrototypeRevision=5;controller.Pawn=player
+driver.PFPrototypeRevision=6;controller.Pawn=player
 local function snapshot()
     controller.f6=false;now=now+1;hooks[path](wrap(driver))
     controller.f6=true;now=now+1;hooks[path](wrap(driver))

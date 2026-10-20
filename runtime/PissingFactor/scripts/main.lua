@@ -14,7 +14,7 @@ local Presentation=require("pf.presentation")
 local configSource=dofile(directory.."../config.lua")
 local config,warnings=Config.validate(configSource)
 for _,warning in ipairs(warnings) do Log.info(warning) end
-Log.info("Loading "..Version.mod..", protocol "..Version.protocol..", prototype 4c (Blueprint stream lifecycle)")
+Log.info("Loading "..Version.mod..", protocol "..Version.protocol..", prototype 4d (Blueprint asset ownership)")
 
 if configSource.EnablePrototype~=true then
     Log.info("Development build: gameplay disabled. EnablePrototype is only for disposable-world integration testing.")
@@ -57,7 +57,7 @@ local function reset()
 end
 
 local function diagnostics()
-    Log.info("Diagnostic snapshot "..Version.mod.." / protocol "..Version.protocol.." / prototype 4c (Blueprint stream lifecycle)")
+    Log.info("Diagnostic snapshot "..Version.mod.." / protocol "..Version.protocol.." / prototype 4d (Blueprint asset ownership)")
     Log.info("Presentation enabled: "..tostring(presentation~=nil))
     if presentationError then Log.info("Presentation error: "..presentationError) end
     local effects=config.EnableEffects and "Effects disabled on dedicated server." or "Effects off (EnableEffects=false)."
@@ -69,6 +69,10 @@ local function diagnostics()
         for _ in pairs(presentation.stains or {}) do stains=stains+1 end
         Log.info("Local visuals: "..streams.." stream(s), "..stains.." stain record(s), "..pending.." pending stream(s)")
         effects=string.format("Effects ready: %d stream(s), %d stain record(s), %d pending.",streams,stains,pending)
+        if Game.valid(presentation.materialSource) then
+            local source=presentation.materialSource
+            Log.info("Blueprint effects state: stream="..tostring(source.PFStreamStatus).." material="..tostring(source.PFMaterialStatus))
+        end
     elseif presentationError then
         local brief=presentationError:match(":%d+:%s*(.*)") or presentationError
         effects="Effects unavailable: "..brief:sub(1,160).." (see UE4SS.log)."
@@ -185,10 +189,10 @@ local function initialize(actor)
     assert(Game.valid(instance),"Game instance unavailable")
     local installed=stringValue(instance.PlayerVersionString)
     assert(installed==Version.game,"Unsupported game version: "..installed.."; expected "..Version.game)
-    assert(Game.read(actor,"PFPrototypeRevision")==5,
-        "Old ModActor assets: install all three cooked files from prototype 4c")
+    assert(Game.read(actor,"PFPrototypeRevision")==6,
+        "Old ModActor assets: install all three cooked files from prototype 4d")
     world=actor:GetWorld()
-    transport=Transport.new(world,config)
+    transport=Transport.new(world,config,actor)
     driver=actor
     server=Server.new(config,Game,transport)
     pump=Pump.new(config.TickSeconds)
@@ -208,7 +212,7 @@ local function initialize(actor)
     -- Blueprint events only store key state. Read it on the 10 Hz actor tick;
     -- do not reenter Lua or dispatch native gameplay actions from input events.
     register(driverPath..":ReceiveTick",heartbeat)
-    Log.info("Prototype 4c ready; hold P or D-pad Left. EnableEffects="..tostring(config.EnableEffects)..". Tap F6 for local status.")
+    Log.info("Prototype 4d ready; hold P or D-pad Left. EnableEffects="..tostring(config.EnableEffects)..". Tap F6 for local status.")
 end
 
 -- BPModLoaderMod creates ModActor in each world. Both callbacks below already

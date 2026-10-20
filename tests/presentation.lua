@@ -3,14 +3,20 @@
 local world,players,impacts={},{},{}
 local now,dedicated,loads,live,peak=0,false,0,0,0
 local badMaterial=false
-local badClass=false
+local materialLoadFailure=false
 local spawnFailure
 local requests=0
 local spawned={}
+local nativeClasses={}
 local function valid(o)return type(o)=="table" and not o.destroyed end
 local function source(id)
-    return {GetWorld=function()return world end,GetAddress=function()return id end,
-        K2_GetActorLocation=function()return {X=10,Y=20,Z=0}end}
+    return setmetatable({GetWorld=function()return world end,GetAddress=function()return id end,
+        K2_GetActorLocation=function()return {X=10,Y=20,Z=0}end},
+        {__index=function(o,key)if key=="PFStreamClass" then return nativeClasses[o] end end,
+         __newindex=function(o,key,value)
+             assert(key~="PFStreamClass","Lua must never write a cosmetic UClass property")
+             rawset(o,key,value)
+         end})
 end
 local function near(a,b)assert(math.abs(a-b)<0.000001,tostring(a).." ~= "..tostring(b))end
 function world:SpawnActor()error("Lua must never spawn a cosmetic stream actor")end
@@ -24,11 +30,21 @@ end
 -- spawn/latch/release/EndPlay graph is executed separately by PFBuild.
 local function engineTick()
     for _,actor in ipairs(players) do
+        if actor.PFMaterialWanted then
+            if not valid(actor.PFStainMaterial) and actor.PFMaterialStatus~=3 then
+                loads=loads+1
+                if materialLoadFailure then actor.PFMaterialStatus=3
+                else actor.PFStainMaterial={};actor.PFMaterialStatus=2 end
+            end
+        else actor.PFStainMaterial=nil;actor.PFMaterialStatus=0 end
         if actor.PFStreamWanted then
             if not valid(actor.PFStreamVisual) and actor.PFStreamStatus~=3 then
                 requests=requests+1
                 if spawnFailure then actor.PFStreamStatus=3
-                else actor.PFStreamVisual=streamActor();actor.PFStreamStatus=2 end
+                else
+                    if not nativeClasses[actor] then nativeClasses[actor]={};loads=loads+1 end
+                    actor.PFStreamVisual=streamActor();actor.PFStreamStatus=2
+                end
             end
         else
             if valid(actor.PFStreamVisual) then actor.PFStreamVisual:K2_DestroyActor() end
@@ -76,31 +92,30 @@ package.loaded["UEHelpers"]={GetGameplayStatics=function()return statics end,
     GetKismetSystemLibrary=function()return system end,
     GetKismetMathLibrary=function()return {MakeRotFromX=function(_,v)return v end}end}
 function FName(s)return s end
-function StaticFindObject()return {GetAsset=function(_,data)
-    loads=loads+1
-    return {IsClass=function()return not badClass and data.AssetName=="BP_PFStream_C"end,
-        GetFullName=function()return "BlueprintGeneratedClass "..data.PackageName.."."..data.AssetName end}
-end}end
+function StaticFindObject()error("Lua presentation must not load or look up cosmetic assets")end
+function LoadAsset()error("Lua presentation must not load cosmetic assets")end
 function FindAllOf(name)return name=="BP_PFPlayer_C" and players or impacts end
 local Presentation=require("pf.presentation")
 dedicated=true
 assert(Presentation.new(world)==nil and loads==0,"Dedicated server must not load visual assets")
 dedicated=false
 local p=Presentation.new(world)
-assert(p and loads==2,"Non-dedicated worlds must initialize both presentation assets")
+assert(p and loads==0 and p.streamClass==nil and p.stainMaterial==nil,
+    "Presentation must never keep a Lua cache of cosmetic asset wrappers")
 local player=source(1)
-player.PFPresentationRevision,player.PFProtocol,player.PFVersion=5,1,"1.0.0"
+player.PFPresentationRevision,player.PFProtocol,player.PFVersion=6,1,"1.0.0"
 player.PFActive,player.PFHasPath,player.PFServerTime=true,true,0
 player.PFOrigin,player.PFEndpoint={X=0,Y=0,Z=100},{X=100,Y=0,Z=80}
 player.PFAim,player.PFDuration={X=1,Y=0,Z=0},0.2
 players={player};p:update(0)
-assert(#spawned==0 and player.PFStreamWanted and player.PFStreamClass==p.streamClass,
-    "Lua must only publish a request and an engine-owned class reference")
+assert(#spawned==0 and player.PFStreamWanted and player.PFMaterialWanted and not player.PFStreamClass,
+    "Lua must only publish plain requests; Blueprint resolves asset references")
 now=0.05;p:update(now);assert(#spawned==0 and requests==0)
 engineTick();p:update(now)
 local stream=p.streams["1"].visual
 assert(not stream.hidden and stream.PFDisplayStart.Z==100)
 assert(requests==1,"Repeated Lua updates must not duplicate a pending request")
+assert(loads==2 and player.PFStreamClass and player.PFStainMaterial,"Only the engine tick may load cosmetic assets")
 near(stream.PFTargetTangentA.X,110)
 player.PFDuration=0.1;player.PFEndpoint={X=50,Y=0,Z=90}
 now=0.1;p:update(now)
@@ -118,22 +133,17 @@ p:update(now);assert(next(p.streams)==nil,"Stale network state cannot leave an a
 player.PFServerTime=now;player.PFHasPath=false
 p:update(now);assert(next(p.streams)==nil,"Failed collision must not draw through walls")
 
--- Simulate Unreal collecting an idle class while Lua still holds its wrapper.
-local oldClass,oldLoads=p.streamClass,loads
-oldClass.destroyed=true;player.PFHasPath=true
+-- Class ownership remains entirely with Blueprint across idle/restart cycles.
+local oldClass,oldLoads=player.PFStreamClass,loads
+player.PFHasPath=true
 p:update(now)
-assert(p.streamClass~=oldClass and loads==oldLoads+1,"Reload a stale stream class immediately before use")
-assert(player.PFStreamClass==p.streamClass,"Blueprint must hold the live class reference")
+assert(player.PFStreamClass==oldClass and loads==oldLoads,"Lua must not validate/reload a cached class")
 engineTick();p:update(now)
 player.PFActive=false;p:update(now)
 engineTick()
 assert(spawned[#spawned].destroyed)
-badClass=true
 local priorRequests=requests
-local ok,err=pcall(Presentation.new,world)
-assert(not ok and tostring(err):find("not a class",1,true) and requests==priorRequests,
-    "Do not pass a non-class asset to Unreal's spawn API")
-badClass=false
+local ok,err
 spawnFailure=true;player.PFActive=true
 p:update(now);engineTick()
 priorRequests=requests;engineTick();assert(requests==priorRequests,"Rejected requests must not retry every frame")
@@ -156,9 +166,11 @@ local function impact(id)
     return a
 end
 local stain=impact(10)
-p.stainMaterial.destroyed=true;oldLoads=loads
+player.PFStainMaterial=nil;oldLoads=loads
 impacts={stain};now=55;p:update(now)
-assert(loads==oldLoads+1,"Reload a stale stain material before creating a decal")
+assert(live==0,"Wait for Blueprint material loading before allocating a decal")
+engineTick();p:update(now)
+assert(loads==oldLoads+1,"Only Blueprint may resolve the stain material")
 local visual=p.stains["10"].visual
 near(visual.opacity,0.35);near(visual.delay,0);near(visual.duration,5);near(visual.life,5)
 assert(live==1,"Late-join fading must allocate one stain only")
@@ -186,4 +198,10 @@ p:reset();assert(live==0 and next(p.stains)==nil)
 impacts={impact(3000)};now=55;badMaterial=true
 assert(not pcall(function()p:update(now)end))
 p:reset();assert(live==0,"Partial material initialization must not leak a decal")
-print("Presentation checks passed: no Lua stream spawning/destruction, queued requests, cancellation, failure latch/timeout, class/material revalidation, stream stop/clipping, fade, prop attachment, expiry, cap")
+engineTick();badMaterial=false;materialLoadFailure=true
+p:update(now);engineTick()
+oldLoads=loads;engineTick();assert(loads==oldLoads,"Failed material loads must not retry each frame")
+ok,err=pcall(function()p:update(now)end)
+assert(not ok and tostring(err):find("Blueprint stain material load rejected",1,true))
+p:reset();engineTick()
+print("Presentation checks passed: no Lua cosmetic loading/UClass writes/spawning, native asset requests, cancellation, failure latch/timeout, stream stop/clipping, fade, attachment, expiry, cap")

@@ -1,17 +1,18 @@
 # Manual prototype test
 
-**Current build: prototype 4c (Blueprint stream lifecycle).** Prototype 4b froze
-on first use and must not be treated as a stable fallback. This build removes
-Lua's deferred stream-spawn calls and uses the player Blueprint's own tick to
-create/release streams. The driver and network asset revision is now 5: replace
+**Current build: prototype 4d (Blueprint asset ownership).** The 4c relief-only
+test passed, but enabling effects froze the game after tracing/state publication
+and before the stream request was logged. This build moves cosmetic asset
+loading and ownership into Blueprint; Lua only supplies ordinary request/state
+fields. The driver and network asset revision is now 6: replace
 all three cooked files as well as Lua. Old assets are rejected at startup.
 P and D-pad Left retain the prototype 3 controls. You perform all game/controller
 tests yourself; this is not a stable release.
 
-The owner's short relief-only test passed on 2026-10-19. The next check for that
-same installation is the [effects phase](#stream-and-surface-stains); no new
-download is needed. This observation does not establish long-session stability
-or effects-enabled behavior.
+The owner's short relief-only test passed on 2026-10-19 in prototype 4c. Prototype
+4d requires the new complete package. Briefly reconfirm relief with effects off,
+then proceed to the [effects phase](#stream-and-surface-stains). The earlier
+observation does not establish stability in this new build or with effects on.
 
 The experimental effects add an arcing stream and fading solid-surface stains to
 the existing bathroom relief. **Effects are off by default for the first test.**
@@ -23,7 +24,7 @@ water surfaces. Multiplayer acceptance remains scheduled last.
 
 ## Prepare
 
-1. Close Abiotic Factor before updating files. Extract `PissingFactor-1.0.0-prototype-4c.zip`
+1. Close Abiotic Factor before updating files. Extract `PissingFactor-1.0.0-prototype-4d.zip`
    into `steamapps/common/AbioticFactor`, following [installation](installation.md).
    Replace the Lua files and keep the `.pak`, `.utoc` and `.ucas` files together.
    The build tool's `PissingFactor-1.0.0-dev.zip` is also valid when its startup
@@ -42,7 +43,7 @@ water surfaces. Multiplayer acceptance remains scheduled last.
 ## First test: stability and visible status
 
 1. Enter normal gameplay in the disposable world. The startup log should include
-   `prototype 4c (Blueprint stream lifecycle)` and `Prototype 4c ready`. If it only says
+   `prototype 4d (Blueprint asset ownership)` and `Prototype 4d ready`. If it only says
    `Waiting for BPModLoaderMod`, send that log before testing the ability.
 2. **Tap and release F6 once.** The mod should show a local status message in the
    game's text-message area, and write one diagnostic snapshot to `UE4SS.log`.
@@ -101,6 +102,10 @@ Only after the relief-only stability test passes: close the game yourself, set
 switch enables environmental simulation; on each machine it also enables local
 rendering. F6 should now report `Effects ready`. No multiplayer test is needed at
 this stage. If the baseline failed, leave effects off and report that first.
+The log also includes `Blueprint effects state`: `material=2` means the native
+material load completed; `stream=0` is normal before the first action and
+`stream=2` means its local actor is ready. A status of 3 means a rejected load/
+spawn; the presentation error explains which request failed.
 
 1. With bathroom need available, stand about one metre from a plain wall in a
    dry room. Hold P or D-pad Left and aim at the wall, then slightly down toward
@@ -134,6 +139,10 @@ message did not distinguish the failing phase. The 4b freeze log ended after its
 first relief update, with no completed spawn or Lua exception. The new debug
 checkpoints bracket arc tracing, impact publishing and state publishing; stream
 requests and successful Blueprint allocation also log once per world.
+4d additionally logs `Presentation checkpoint: stream queue begin` before writing
+the request. Its Blueprint loads the soft class/material paths outside the Lua
+hook. If another freeze occurs, the last completed marker narrows the next
+investigation; it does not by itself establish a native root cause.
 Exact water boundaries and water effects are deferred; do not treat dry-surface
 success as passing the water acceptance gate.
 

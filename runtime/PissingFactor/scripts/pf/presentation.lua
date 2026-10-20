@@ -7,22 +7,10 @@ local Presentation={}
 Presentation.__index=Presentation
 local function vector(v) return {X=v.X,Y=v.Y,Z=v.Z} end
 local function stringValue(v) return type(v)=="string" and v or v:ToString() end
-local function asset(name,class)
-    local registry=StaticFindObject("/Script/AssetRegistry.Default__AssetRegistryHelpers")
-    assert(Game.valid(registry),"AssetRegistryHelpers unavailable")
-    local object=registry:GetAsset({PackageName=FName("/Game/Mods/PissingFactor/"..name),
-        AssetName=FName(name..(class and "_C" or ""))})
-    assert(Game.valid(object),"Missing presentation asset "..name.."; install all prototype 4c cooked files")
-    if class then
-        assert(object:IsClass(),"Presentation asset is not a class: "..object:GetFullName())
-    end
-    return object
-end
 local function releaseStream(entry)
     -- The unhooked player Blueprint tick/EndPlay owns allocation and destruction.
     if Game.valid(entry.source) then
         entry.source.PFStreamWanted=false
-        entry.source.PFStreamClass=nil
     end
 end
 local function destroyDecal(o) if Game.valid(o) then o:K2_DestroyComponent(o) end end
@@ -32,33 +20,29 @@ function Presentation.new(world)
     -- IsDedicatedServer belongs to KismetSystemLibrary in the pinned game dump.
     -- GameplayStatics returns a non-callable TrivialObject for this missing member.
     if UE.GetKismetSystemLibrary():IsDedicatedServer(world) then return nil end
-    return setmetatable({world=world,streams={},stains={},players={},impacts={},
-        streamClass=asset("BP_PFStream",true),stainMaterial=asset("M_Stain",false)},Presentation)
+    return setmetatable({world=world,streams={},stains={},players={},impacts={}},Presentation)
 end
 
 function Presentation:reset()
     for _,e in pairs(self.streams) do releaseStream(e) end
     for _,e in pairs(self.stains) do destroyDecal(e.visual) end
+    if Game.valid(self.materialSource) then self.materialSource.PFMaterialWanted=false end
     self.streams,self.stains,self.players,self.impacts={},{},{},{}
     self.discovered=nil
+    self.materialSource=nil
 end
 
 function Presentation:stream(actor,entry,now)
+    Log.once("stream_state:"..tostring(self),"Presentation checkpoint: stream state accepted")
     local start,finish=vector(actor.PFOrigin),vector(actor.PFEndpoint)
     local duration=actor.PFDuration
     assert(type(duration)=="number" and duration>0 and duration<=2.56,"Invalid replicated arc duration")
     local tangentA,tangentB=Trajectory.tangents(vector(actor.PFAim),duration)
     if not entry then
         assert(Game.valid(self.world),"Stream world is no longer valid")
-        -- Lua references do not keep Unreal assets alive across garbage collection.
-        -- Revalidate immediately before use, including after long idle periods.
-        if not Game.valid(self.streamClass) then
-            self.streamClass=asset("BP_PFStream",true)
-            Log.info("Reloaded stream class before spawning")
-        end
-        -- A reflected UClass property is an engine-owned strong reference. Merely
-        -- caching the Lua wrapper did not guarantee the asset's lifetime.
-        actor.PFStreamClass=self.streamClass
+        Log.once("stream_queue:"..tostring(self),"Presentation checkpoint: stream queue begin")
+        -- Blueprint resolves its soft class path and owns the class reference.
+        -- No cosmetic asset loading, cached UClass validation or UClass writes in Lua.
         actor.PFStreamStatus=0
         actor.PFStreamWanted=true
         entry={source=actor,requestedAt=now}
@@ -98,7 +82,11 @@ function Presentation:stain(actor,remaining)
     -- Wait for a replicated component reference. Falling back to world-space
     -- prematurely would leave stains floating when a prop moves.
     if actor.PFAttached and not Game.valid(surface) then return nil end
-    if not Game.valid(self.stainMaterial) then self.stainMaterial=asset("M_Stain",false) end
+    local source=self.materialSource
+    if not Game.valid(source) then return nil end
+    assert(source.PFMaterialStatus~=3,"Blueprint stain material load rejected; install all prototype 4d cooked files")
+    local stainMaterial=source.PFStainMaterial
+    if not Game.valid(stainMaterial) then return nil end
     local attached=actor.PFAttached
     local normal=vector(attached and actor.PFLocalNormal or actor.PFNormal)
     local position=vector(attached and actor.PFLocalPosition or actor:K2_GetActorLocation())
@@ -106,10 +94,10 @@ function Presentation:stain(actor,remaining)
     local size={X=2,Y=10,Z=8}
     local visual
     if attached then
-        visual=UE.GetGameplayStatics():SpawnDecalAttached(self.stainMaterial,size,surface,
+        visual=UE.GetGameplayStatics():SpawnDecalAttached(stainMaterial,size,surface,
             FName("None"),position,rot,0,remaining)
     else
-        visual=UE.GetGameplayStatics():SpawnDecalAtLocation(self.world,self.stainMaterial,
+        visual=UE.GetGameplayStatics():SpawnDecalAtLocation(self.world,stainMaterial,
             size,position,rot,remaining)
     end
     local entry={source=actor,visual=visual,surface=attached and surface or nil,attached=attached}
@@ -137,17 +125,28 @@ function Presentation:update(now)
         self.impacts=FindAllOf("BP_PFImpact_C") or {}
     end
     local worldTime=state:GetServerWorldTimeSeconds()
-    local streams={}
+    local streams,materialSource={}
     for _,actor in ipairs(self.players) do
         if Game.valid(actor) and Game.same(actor:GetWorld(),self.world)
-            and actor.PFPresentationRevision==5 and actor.PFProtocol==Version.protocol
-            and stringValue(actor.PFVersion)==Version.mod and actor.PFActive and actor.PFHasPath
-            and worldTime-actor.PFServerTime<=1.1 then
-            local id=tostring(actor:GetAddress())
-            -- Cache entries immediately so a later error can clean up allocations.
-            self.streams[id]=self:stream(actor,self.streams[id],now)
-            streams[id]=true
+            and actor.PFPresentationRevision==6 and actor.PFProtocol==Version.protocol
+            and stringValue(actor.PFVersion)==Version.mod then
+            if not materialSource then
+                materialSource=actor
+                actor.PFMaterialWanted=true
+            end
+            if actor.PFActive and actor.PFHasPath and worldTime-actor.PFServerTime<=1.1 then
+                local id=tostring(actor:GetAddress())
+                self.streams[id]=self:stream(actor,self.streams[id],now)
+                streams[id]=true
+            end
         end
+    end
+    if Game.valid(self.materialSource) and not Game.same(self.materialSource,materialSource) then
+        self.materialSource.PFMaterialWanted=false
+    end
+    self.materialSource=materialSource
+    if materialSource then
+        assert(materialSource.PFMaterialStatus~=3,"Blueprint stain material load rejected; install all prototype 4d cooked files")
     end
     for id,entry in pairs(self.streams) do
         if not streams[id] then releaseStream(entry);self.streams[id]=nil end

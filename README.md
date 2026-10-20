@@ -24,7 +24,7 @@ UE4SS. Controller support means controllers on PC, not installation on consoles.
 ## Development status
 
 The repository contains the implementation in progress, tests, and build tools.
-The current milestone is prototype 4c: an opt-in visible stream and solid-surface
+The current milestone is prototype 4d: an opt-in visible stream and solid-surface
 stain build. The editor plugin generates the original curved-stream mesh,
 presentation Blueprint, replicated actors, consumed key bindings and materials.
 Prototype 3 uses D-pad Left alone, removes LB interception and native action
@@ -44,8 +44,11 @@ effects remain unverified. The subsequent prototype 4b run froze on first use;
 the player Blueprint's own tick/EndPlay, and defaults `EnableEffects` to false.
 A short user-run 4c test confirmed relief without freezing with effects off;
 the log records continence rising from 60 to 70.3125 and released snapshots.
-Follow the manual procedure for the separate effects test. The exact earlier
-hang location and effects-enabled stability remain unproven.
+The subsequent effects-enabled run froze after arc tracing and state publication
+completed, before a stream request was logged. Prototype 4d moves cosmetic asset
+loading/ownership entirely into Blueprint and removes Lua's cached cosmetic
+asset references and UClass writes. The exact native hang cause remains unproven;
+follow the manual procedure for a new, separate effects test.
 Known liquid-volume bounds conservatively
 suppress stains; exact water surfaces, water effects, animations, in-game audio,
 rebinding UI and multiplayer acceptance are unfinished. `EnablePrototype` defaults

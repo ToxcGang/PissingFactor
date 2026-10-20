@@ -72,6 +72,18 @@ all presentation initialization locally. It is the default for the prototype's
 relief-only baseline. Debug checkpoints identify the first trace/publish stages
 and the request/completion boundary when effects are explicitly enabled.
 
+The 4c effects-enabled run froze after state publication and before the stream
+request log. In 4d, Lua no longer loads/caches cosmetic assets or assigns UClass
+references. It writes plain request fields; the player Blueprint resolves soft
+class/material paths on its own tick and holds the loaded objects in transient,
+nonreplicated strong references. Lua reads the current owned material only when
+allocating a decal. Failed native loads latch until release. This addresses the
+suspect lifetime/loading boundary without claiming a proven cause for the hang.
+The mod driver also owns hard references to the core player/input/impact classes.
+Transport reads those references from the live driver rather than loading and
+caching unowned classes; the unused impact class therefore survives world GC
+before the first solid hit. Core classes contain no hard cosmetic references.
+
 Replicated action/impact state carries server time and expiration, so late
 joiners see only the remaining lifetime. Each client creates cosmetic visuals
 locally; the dedicated server performs no rendering or audio work. Limit

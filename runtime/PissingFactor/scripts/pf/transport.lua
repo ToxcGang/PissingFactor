@@ -7,25 +7,24 @@ local UE = require("UEHelpers")
 local Collision = require("pf.collision")
 local Transport = {}
 Transport.__index = Transport
-local root = "/Game/Mods/PissingFactor/"
 local zero = {X=0,Y=0,Z=0}
 local rotation = {Pitch=0,Yaw=0,Roll=0}
 
-local function asset(name)
-    -- Use the same reflected loader as AF's BPModLoaderMod. LoadAsset does
-    -- not provide a dependable returned UClass in the pinned UE4SS build.
-    local registry = StaticFindObject("/Script/AssetRegistry.Default__AssetRegistryHelpers")
-    assert(Game.valid(registry), "AssetRegistryHelpers unavailable")
-    local object = registry:GetAsset({PackageName=FName(root .. name),AssetName=FName(name .. "_C")})
-    assert(Game.valid(object), "Missing cooked " .. name .. "; install the matching PissingFactor.pak")
+local function actorClass(driver,name)
+    -- ModActor owns hard class references, including the idle impact class.
+    -- They remain alive through world GC while the driver/transport is in use.
+    local object=Game.read(driver,name)
+    assert(Game.valid(object) and object:IsClass(),
+        "Missing engine-owned "..name.."; install all prototype 4d cooked files")
     return object
 end
 
-function Transport.new(world, config)
-    return setmetatable({world=world,config=config,impacts={},states={},
+function Transport.new(world, config, driver)
+    assert(Game.valid(driver),"ModActor class owner is unavailable")
+    return setmetatable({world=world,config=config,driver=driver,impacts={},states={},
         collision=Collision.new(world),
-        playerClass=asset("BP_PFPlayer"),impactClass=asset("BP_PFImpact"),
-        inputClass=asset("BP_PFInput")},Transport)
+        playerClass=actorClass(driver,"PFPlayerClass"),impactClass=actorClass(driver,"PFImpactClass"),
+        inputClass=actorClass(driver,"PFInputClass")},Transport)
 end
 
 function Transport:now()
@@ -44,9 +43,9 @@ function Transport:spawnPlayer(player)
     assert(Game.valid(controller), "Player has no controller")
     local actor=self.world:SpawnActor(self.playerClass,player:K2_GetActorLocation(),rotation)
     assert(Game.valid(actor), "Cannot spawn BP_PFPlayer")
-    if Game.read(actor,"PFPresentationRevision")~=5 then
+    if Game.read(actor,"PFPresentationRevision")~=6 then
         actor:K2_DestroyActor()
-        error("Old network assets: install all three cooked files from prototype 4c")
+        error("Old network assets: install all three cooked files from prototype 4d")
     end
     actor:SetOwner(controller)
     actor.PFPawn=player

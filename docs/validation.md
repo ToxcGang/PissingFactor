@@ -107,15 +107,33 @@ expected. The input device was not specified for this run, and full relief was
 not reached. Exact package/source/container hashes and scoped observations are
 in the [prototype 4c observation record](../validation/prototype-4c-2026-10-19.json).
 This does not establish long-session stability, effects-enabled behavior, or a
-cause for the earlier hangs. The next manual check enables effects in this same
-tested build, following the [separate effects phase](manual-prototype-test.md#stream-and-surface-stains).
+cause for the earlier hangs.
+
+The subsequent 4c effects-enabled test on 2026-10-19 **failed stability**. The
+20 installed runtime/container files match the same ZIP. At 18:20:12 the log
+records one relief step from 70.3125 to 71.25, `arc trace complete`, and `state
+publish complete`. No stream-request message, impact-publish checkpoint or Lua
+exception follows. This locates the next investigation after state publication
+and before completion of the stream request, without identifying a specific
+native cause. The [failed effects observation record](../validation/prototype-4c-effects-2026-10-19.json)
+preserves the exact build and scoped evidence; raw logs remain private.
+
+Prototype 4d removes cosmetic asset loads/caches and UClass writes from Lua.
+Blueprint soft paths resolve into engine-owned class/material properties on its
+own tick, with failed loads latched. Authoring validation checks loading, GC
+retention and actor lifecycle; a second fresh process starts with the stream
+class unloaded. Asset revision 6 rejects older driver/network actors. Effects
+remain off by default; manual game stability and visible output are still pending.
+The driver also holds the core player/input/impact classes, with retention
+checked after GC in the authoring world. This protects the idle impact class;
+it does not establish that a real game impact has succeeded.
 
 Prototype 4 adds the original spline stream and solid-surface stains. Offline
 tests cover collision ordering, conservative water exclusion, arc duration,
 presentation expiry/fade, moving-surface references, allocation caps and cleanup.
 Unreal generation checks the Blueprint graphs and original mesh. These checks
 are not evidence of in-game visual quality or correct physical surfaces; the
-owner's prototype 4c effects-enabled manual retest is still pending. Prototype 3's recorded success
+owner's prototype 4d manual retest is still pending. Prototype 3's recorded success
 does not transfer automatically to the new build.
 
 | ID | Scenario | Acceptance |

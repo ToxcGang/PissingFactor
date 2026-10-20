@@ -23,6 +23,8 @@
 #include "K2Node_CustomEvent.h"
 #include "K2Node_CallFunction.h"
 #include "K2Node_IfThenElse.h"
+#include "K2Node_ExecutionSequence.h"
+#include "K2Node_ClassDynamicCast.h"
 #include "K2Node_SpawnActorFromClass.h"
 #include "K2Node_Self.h"
 #include "K2Node_VariableGet.h"
@@ -43,6 +45,7 @@
 #include "Materials/MaterialExpressionTime.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
+#include "Misc/Parse.h"
 #include "Misc/PackageName.h"
 #include "UObject/SavePackage.h"
 #include "InputCoreTypes.h"
@@ -154,7 +157,7 @@ static void PlayerActor()
     Real.PinSubCategory = UEdGraphSchema_K2::PC_Double;
     Variable(BP, TEXT("PFPawn"), Type(UEdGraphSchema_K2::PC_Object, APawn::StaticClass()), TEXT("None"), true);
     Variable(BP, TEXT("PFActive"), Bool, TEXT("false"), true);
-    Variable(BP, TEXT("PFPresentationRevision"), Int, TEXT("5"), true);
+    Variable(BP, TEXT("PFPresentationRevision"), Int, TEXT("6"), true);
     Variable(BP, TEXT("PFHasPath"), Bool, TEXT("false"), true);
     Variable(BP, TEXT("PFDuration"), Real, TEXT("0"), true);
     Variable(BP, TEXT("PFOrigin"), Vector, TEXT("0,0,0"), true);
@@ -199,6 +202,11 @@ static void PlayerActor()
     CDO->PrimaryActorTick.bCanEverTick = true;
     CDO->PrimaryActorTick.bStartWithTickEnabled = true;
     CDO->PrimaryActorTick.bAllowTickOnDedicatedServer = false;
+    const auto* StreamAsset = FindFProperty<FSoftClassProperty>(BP->GeneratedClass,TEXT("PFStreamAsset"));
+    const auto* StainAsset = FindFProperty<FSoftObjectProperty>(BP->GeneratedClass,TEXT("PFStainAsset"));
+    check(StreamAsset && StainAsset);
+    check(StreamAsset->GetPropertyValue_InContainer(CDO).ToSoftObjectPath().ToString()==Root+TEXT("BP_PFStream.BP_PFStream_C"));
+    check(StainAsset->GetPropertyValue_InContainer(CDO).ToSoftObjectPath().ToString()==Root+TEXT("M_Stain.M_Stain"));
     Save(BP);
 }
 
@@ -264,7 +272,12 @@ static void DriverActor()
 {
     UBlueprint* BP = Actor(TEXT("ModActor"), false);
     Variable(BP, TEXT("PFHeartbeatSeen"), Type(UEdGraphSchema_K2::PC_Boolean), TEXT("false"), false);
-    Variable(BP, TEXT("PFPrototypeRevision"), Type(UEdGraphSchema_K2::PC_Int), TEXT("5"), false);
+    Variable(BP, TEXT("PFPrototypeRevision"), Type(UEdGraphSchema_K2::PC_Int), TEXT("6"), false);
+    for (const FString Name : {TEXT("Player"),TEXT("Impact"),TEXT("Input")})
+    {
+        Variable(BP,FName(*(TEXT("PF")+Name+TEXT("Class"))),Type(UEdGraphSchema_K2::PC_Class,AActor::StaticClass()),
+            Root+TEXT("BP_PF")+Name+TEXT(".BP_PF")+Name+TEXT("_C"),false);
+    }
     FGraphNodeCreator<UK2Node_Event> Creator(*BP->UbergraphPages[0]);
     UK2Node_Event* Tick = Creator.CreateNode();
     Tick->EventReference.SetExternalMember(TEXT("ReceiveTick"), AActor::StaticClass());
@@ -282,6 +295,11 @@ static void DriverActor()
     // A nonzero engine tick interval can stop advancing while paused. Lua
     // throttles simulation with real world time and reads diagnostic key edges.
     CDO->PrimaryActorTick.TickInterval = 0.f;
+    for (const FName Name : {FName(TEXT("PFPlayerClass")),FName(TEXT("PFImpactClass")),FName(TEXT("PFInputClass"))})
+    {
+        const auto* Property = FindFProperty<FClassProperty>(BP->GeneratedClass,Name);
+        check(Property && IsValid(Property->GetObjectPropertyValue_InContainer(CDO)));
+    }
     Save(BP);
 }
 
@@ -478,6 +496,40 @@ static UEdGraphPin* StreamValid(UBlueprint* BP)
     return Valid->GetReturnValuePin();
 }
 
+static UK2Node_ExecutionSequence* Sequence(UBlueprint* BP, UEdGraphPin* Exec)
+{
+    FGraphNodeCreator<UK2Node_ExecutionSequence> Creator(*BP->UbergraphPages[0]);
+    auto* Node = Creator.CreateNode(); Creator.Finalize(); Link(Exec,Node->GetExecPin());
+    return Node;
+}
+
+static UEdGraphPin* ObjectValid(UBlueprint* BP, FName Name)
+{
+    auto* Valid = Call(BP,UKismetSystemLibrary::StaticClass(),TEXT("IsValid"));
+    Link(Get(BP,Name),Valid->FindPinChecked(TEXT("Object")));
+    return Valid->GetReturnValuePin();
+}
+
+static void MaterialLifecycle(UBlueprint* BP, UEdGraphPin* Exec)
+{
+    auto* Wanted = Branch(BP,Exec,Get(BP,TEXT("PFMaterialWanted")));
+    auto* Clear = SetLiteral(BP,TEXT("PFStainMaterial"),Wanted->GetElsePin(),TEXT("None"));
+    SetLiteral(BP,TEXT("PFMaterialStatus"),Clear,TEXT("0"));
+    auto* Ready = Branch(BP,Wanted->GetThenPin(),ObjectValid(BP,TEXT("PFStainMaterial")));
+    SetLiteral(BP,TEXT("PFMaterialStatus"),Ready->GetThenPin(),TEXT("2"));
+    auto* Failed = Call(BP,UKismetMathLibrary::StaticClass(),TEXT("NotEqual_IntInt"));
+    Link(Get(BP,TEXT("PFMaterialStatus")),Failed->FindPinChecked(TEXT("A"))); Default(Failed,TEXT("B"),TEXT("3"));
+    auto* MayLoad = Branch(BP,Ready->GetElsePin(),Failed->GetReturnValuePin());
+    auto* Begin = SetLiteral(BP,TEXT("PFMaterialStatus"),MayLoad->GetThenPin(),TEXT("1"));
+    auto* Load = Call(BP,UKismetSystemLibrary::StaticClass(),TEXT("LoadAsset_Blocking"));
+    Link(Begin,Load->GetExecPin()); Link(Get(BP,TEXT("PFStainAsset")),Load->FindPinChecked(TEXT("Asset")));
+    auto* Loaded = Load->GetThenPin();
+    SetFromPin(BP,TEXT("PFStainMaterial"),Load->GetReturnValuePin(),Loaded);
+    auto* Result = Branch(BP,Loaded,ObjectValid(BP,TEXT("PFStainMaterial")));
+    SetLiteral(BP,TEXT("PFMaterialStatus"),Result->GetThenPin(),TEXT("2"));
+    SetLiteral(BP,TEXT("PFMaterialStatus"),Result->GetElsePin(),TEXT("3"));
+}
+
 static void ReleaseStream(UBlueprint* BP, UEdGraphPin* Exec)
 {
     auto* Exists = Branch(BP,Exec,StreamValid(BP));
@@ -496,8 +548,14 @@ static void StreamLifecycle(UBlueprint* BP)
     Variable(BP,TEXT("PFStreamVisual"),Type(UEdGraphSchema_K2::PC_Object,AActor::StaticClass()),TEXT("None"),false);
     Variable(BP,TEXT("PFStreamWanted"),Type(UEdGraphSchema_K2::PC_Boolean),TEXT("false"),false);
     Variable(BP,TEXT("PFStreamStatus"),Int,TEXT("0"),false);
+    Variable(BP,TEXT("PFStreamAsset"),Type(UEdGraphSchema_K2::PC_SoftClass,AActor::StaticClass()),Root+TEXT("BP_PFStream.BP_PFStream_C"),false);
+    Variable(BP,TEXT("PFStainAsset"),Type(UEdGraphSchema_K2::PC_SoftObject,UObject::StaticClass()),Root+TEXT("M_Stain.M_Stain"),false);
+    Variable(BP,TEXT("PFStainMaterial"),Type(UEdGraphSchema_K2::PC_Object,UObject::StaticClass()),TEXT("None"),false);
+    Variable(BP,TEXT("PFMaterialWanted"),Type(UEdGraphSchema_K2::PC_Boolean),TEXT("false"),false);
+    Variable(BP,TEXT("PFMaterialStatus"),Int,TEXT("0"),false);
     for (const FName Name : {FName(TEXT("PFStreamClass")),FName(TEXT("PFStreamVisual")),
-         FName(TEXT("PFStreamWanted")),FName(TEXT("PFStreamStatus"))})
+         FName(TEXT("PFStreamWanted")),FName(TEXT("PFStreamStatus")),FName(TEXT("PFStainMaterial")),
+         FName(TEXT("PFMaterialWanted")),FName(TEXT("PFMaterialStatus"))})
     {
         BP->NewVariables[FBlueprintEditorUtils::FindNewVariableIndex(BP,Name)].PropertyFlags |= CPF_Transient;
     }
@@ -505,7 +563,9 @@ static void StreamLifecycle(UBlueprint* BP)
     auto* Tick = OverrideEvent(BP,TEXT("ReceiveTick"));
     auto* Dedicated = Call(BP,UKismetSystemLibrary::StaticClass(),TEXT("IsDedicatedServer"));
     auto* Client = Branch(BP,Tick->FindPinChecked(UEdGraphSchema_K2::PN_Then),Dedicated->GetReturnValuePin());
-    auto* Wanted = Branch(BP,Client->GetElsePin(),Get(BP,TEXT("PFStreamWanted")));
+    auto* ClientWork = Sequence(BP,Client->GetElsePin());
+    MaterialLifecycle(BP,ClientWork->GetThenPinGivenIndex(0));
+    auto* Wanted = Branch(BP,ClientWork->GetThenPinGivenIndex(1),Get(BP,TEXT("PFStreamWanted")));
     ReleaseStream(BP,Wanted->GetElsePin());
     auto* Exists = Branch(BP,Wanted->GetThenPin(),StreamValid(BP));
     auto* Failed = Call(BP,UKismetMathLibrary::StaticClass(),TEXT("NotEqual_IntInt"));
@@ -513,15 +573,28 @@ static void StreamLifecycle(UBlueprint* BP)
     auto* MaySpawn = Branch(BP,Exists->GetElsePin(),Failed->GetReturnValuePin());
     auto* ValidClass = Call(BP,UKismetSystemLibrary::StaticClass(),TEXT("IsValidClass"));
     Link(Get(BP,TEXT("PFStreamClass")),ValidClass->FindPinChecked(TEXT("Class")));
-    auto* ClassReady = Branch(BP,MaySpawn->GetThenPin(),ValidClass->GetReturnValuePin());
-    SetLiteral(BP,TEXT("PFStreamStatus"),ClassReady->GetElsePin(),TEXT("3"));
-    auto* Begin = SetLiteral(BP,TEXT("PFStreamStatus"),ClassReady->GetThenPin(),TEXT("1"));
+    auto* Begin = SetLiteral(BP,TEXT("PFStreamStatus"),MaySpawn->GetThenPin(),TEXT("1"));
+    auto* Prepare = Sequence(BP,Begin);
+    auto* ClassReady = Branch(BP,Prepare->GetThenPinGivenIndex(0),ValidClass->GetReturnValuePin());
+    auto* Load = Call(BP,UKismetSystemLibrary::StaticClass(),TEXT("LoadClassAsset_Blocking"));
+    Link(ClassReady->GetElsePin(),Load->GetExecPin());
+    Link(Get(BP,TEXT("PFStreamAsset")),Load->FindPinChecked(TEXT("AssetClass")));
+    auto* Loaded = Load->GetThenPin();
+    FGraphNodeCreator<UK2Node_ClassDynamicCast> CastCreator(*BP->UbergraphPages[0]);
+    auto* ActorClass = CastCreator.CreateNode(); ActorClass->TargetType=AActor::StaticClass();
+    CastCreator.Finalize(); ActorClass->SetPurity(true);
+    Link(Load->GetReturnValuePin(),ActorClass->GetCastSourcePin());
+    SetFromPin(BP,TEXT("PFStreamClass"),ActorClass->GetCastResultPin(),Loaded);
+    auto* LoadedClass = Call(BP,UKismetSystemLibrary::StaticClass(),TEXT("IsValidClass"));
+    Link(Get(BP,TEXT("PFStreamClass")),LoadedClass->FindPinChecked(TEXT("Class")));
+    auto* CanSpawn = Branch(BP,Prepare->GetThenPinGivenIndex(1),LoadedClass->GetReturnValuePin());
+    SetLiteral(BP,TEXT("PFStreamStatus"),CanSpawn->GetElsePin(),TEXT("3"));
     FGraphNodeCreator<UK2Node_SpawnActorFromClass> SpawnCreator(*BP->UbergraphPages[0]);
     auto* Spawn = SpawnCreator.CreateNode();
     // This node's PostPlacedNewNode accesses its scale pin before the generic
     // graph creator normally allocates pins.
     Spawn->AllocateDefaultPins(); SpawnCreator.Finalize();
-    Link(Begin,Spawn->GetExecPin());
+    Link(CanSpawn->GetThenPin(),Spawn->GetExecPin());
     Link(Get(BP,TEXT("PFStreamClass")),Spawn->FindPinChecked(TEXT("Class")));
     const auto* Schema = GetDefault<UEdGraphSchema_K2>();
     Schema->TrySetDefaultValue(*Spawn->FindPinChecked(TEXT("CollisionHandlingOverride")),TEXT("AlwaysSpawn"));
@@ -612,19 +685,23 @@ static void StreamActor(UStaticMesh* Mesh)
     Save(BP);
 }
 
-static void VerifyStreamLifecycle()
+static void VerifyStreamLifecycle(bool RequireCold = false)
 {
     // Execute the generated graph in a disposable authoring world. No game
     // installation, input, save files, UE4SS or interactive editor is involved.
     auto* PlayerClass = LoadClass<AActor>(nullptr,*(Root+TEXT("BP_PFPlayer.BP_PFPlayer_C")));
-    auto* StreamClass = LoadClass<AActor>(nullptr,*(Root+TEXT("BP_PFStream.BP_PFStream_C")));
-    check(PlayerClass && StreamClass);
+    auto* DriverClass = LoadClass<AActor>(nullptr,*(Root+TEXT("ModActor.ModActor_C")));
+    const FString StreamPath = Root+TEXT("BP_PFStream.BP_PFStream_C");
+    check(PlayerClass && DriverClass);
+    if (RequireCold) check(!FindObject<UClass>(nullptr,*StreamPath));
     UWorld::InitializationValues Values;
     Values.AllowAudioPlayback(false).CreatePhysicsScene(false).CreateNavigation(false).CreateAISystem(false).ShouldSimulatePhysics(false);
     UWorld* World = UWorld::CreateWorld(EWorldType::Game,false,NAME_None,nullptr,true,ERHIFeatureLevel::Num,&Values);
     check(World && GEngine);
     GEngine->CreateNewWorldContext(EWorldType::Game).SetCurrentWorld(World);
     World->InitializeActorsForPlay(FURL());
+    AActor* Driver = World->SpawnActor<AActor>(DriverClass);
+    check(Driver);
     AActor* Player = World->SpawnActor<AActor>(PlayerClass,FVector(10,20,100),FRotator::ZeroRotator);
     check(Player);
     Player->DispatchBeginPlay();
@@ -633,8 +710,12 @@ static void VerifyStreamLifecycle()
     auto* Wanted = FindFProperty<FBoolProperty>(PlayerClass,TEXT("PFStreamWanted"));
     auto* Status = FindFProperty<FIntProperty>(PlayerClass,TEXT("PFStreamStatus"));
     auto* Origin = FindFProperty<FStructProperty>(PlayerClass,TEXT("PFOrigin"));
-    check(Class && Visual && Wanted && Status && Origin);
-    for (FProperty* Property : TArray<FProperty*>{Class,Visual,Wanted,Status})
+    auto* SoftClass = FindFProperty<FSoftClassProperty>(PlayerClass,TEXT("PFStreamAsset"));
+    auto* Material = FindFProperty<FObjectProperty>(PlayerClass,TEXT("PFStainMaterial"));
+    auto* MaterialWanted = FindFProperty<FBoolProperty>(PlayerClass,TEXT("PFMaterialWanted"));
+    auto* MaterialStatus = FindFProperty<FIntProperty>(PlayerClass,TEXT("PFMaterialStatus"));
+    check(Class && Visual && Wanted && Status && Origin && SoftClass && Material && MaterialWanted && MaterialStatus);
+    for (FProperty* Property : TArray<FProperty*>{Class,Visual,Wanted,Status,Material,MaterialWanted,MaterialStatus})
     {
         check(!Property->HasAnyPropertyFlags(CPF_Net));
         check(Property->HasAnyPropertyFlags(CPF_Transient));
@@ -643,16 +724,31 @@ static void VerifyStreamLifecycle()
     UFunction* Tick = Player->FindFunctionChecked(TEXT("ReceiveTick"));
     const auto Update = [&]() { float Delta = 1.f/60.f; Player->ProcessEvent(Tick,&Delta); };
     Update(); check(Status->GetPropertyValue_InContainer(Player)==0);
+    check(!Class->GetObjectPropertyValue_InContainer(Player) && !Material->GetObjectPropertyValue_InContainer(Player));
+    MaterialWanted->SetPropertyValue_InContainer(Player,true); Update();
+    check(IsValid(Cast<UMaterialInterface>(Material->GetObjectPropertyValue_InContainer(Player))));
+    check(MaterialStatus->GetPropertyValue_InContainer(Player)==2);
+    check(!Class->GetObjectPropertyValue_InContainer(Player));
+    *SoftClass->ContainerPtrToValuePtr<FSoftObjectPtr>(Player) = FSoftObjectPtr();
     Wanted->SetPropertyValue_InContainer(Player,true);
     Update(); check(Status->GetPropertyValue_InContainer(Player)==3); // Missing class latches failure.
-    Class->SetObjectPropertyValue_InContainer(Player,StreamClass);
+    *SoftClass->ContainerPtrToValuePtr<FSoftObjectPtr>(Player) = FSoftObjectPtr(FSoftObjectPath(StreamPath));
     Update(); check(Status->GetPropertyValue_InContainer(Player)==3); // No retry every frame.
     Wanted->SetPropertyValue_InContainer(Player,false); Update();
     Wanted->SetPropertyValue_InContainer(Player,true); Update();
     auto* First = Cast<AActor>(Visual->GetObjectPropertyValue_InContainer(Player));
-    check(IsValid(First) && First->GetClass()==StreamClass && First->GetOwner()==Player);
+    check(IsValid(First) && First->GetClass()->GetPathName()==StreamPath && First->GetOwner()==Player);
     check(!First->GetIsReplicated() && First->GetActorLocation().Equals(FVector(10,20,100)));
     check(Status->GetPropertyValue_InContainer(Player)==2);
+    CollectGarbage(RF_NoFlags);
+    check(IsValid(First) && IsValid(Class->GetObjectPropertyValue_InContainer(Player)));
+    check(IsValid(Material->GetObjectPropertyValue_InContainer(Player)));
+    for (const FName Name : {FName(TEXT("PFPlayerClass")),FName(TEXT("PFImpactClass")),FName(TEXT("PFInputClass"))})
+    {
+        const auto* Property = FindFProperty<FClassProperty>(DriverClass,Name);
+        auto* CoreClass = Cast<UClass>(Property->GetObjectPropertyValue_InContainer(Driver));
+        check(IsValid(CoreClass) && CoreClass->IsChildOf(AActor::StaticClass()));
+    }
     Update(); check(Visual->GetObjectPropertyValue_InContainer(Player)==First);
     Wanted->SetPropertyValue_InContainer(Player,false); Update();
     check(!IsValid(First) && !Visual->GetObjectPropertyValue_InContainer(Player));
@@ -662,7 +758,7 @@ static void VerifyStreamLifecycle()
     Player->Destroy(); check(!IsValid(Second));
     World->DestroyWorld(false);
     GEngine->DestroyWorldContext(World);
-    UE_LOG(LogTemp,Display,TEXT("PissingFactor: Blueprint stream lifecycle passed: spawn, origin/owner, idle, failure latch, release, EndPlay; transient nonreplicated references"));
+    UE_LOG(LogTemp,Display,TEXT("PissingFactor: Blueprint asset/lifecycle passed: native soft-path class/material loads, GC retention, spawn, origin/owner, failure latch, release, EndPlay; cold=%d"),RequireCold);
 }
 }
 
@@ -673,6 +769,11 @@ UPFBuildCommandlet::UPFBuildCommandlet()
 
 int32 UPFBuildCommandlet::Main(const FString& Params)
 {
+    if (FParse::Param(*Params,TEXT("ValidateOnly")))
+    {
+        PF::VerifyStreamLifecycle(true);
+        return 0;
+    }
     PF::PlayerActor();
     PF::ImpactActor();
     PF::InputActor();

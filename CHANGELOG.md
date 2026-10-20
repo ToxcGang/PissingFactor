@@ -9,6 +9,17 @@ This does not constitute a playable 1.0.0 release.
 
 Initial release target. No stable release has been published.
 
+- Prototype 4d: move cosmetic class/material loading entirely into the player
+  Blueprint's unhooked tick. Soft paths resolve into engine-owned references;
+  Lua presentation no longer loads, caches or writes cosmetic UClass objects.
+  Keep effects off by default and add queue/material status diagnostics. Asset
+  revision is now 6. Add native soft-path loading and GC-retention checks plus a
+  second, fresh-process authoring validation that begins with the stream class
+  unloaded. Addresses the presentation setup boundary identified by 4c's failed
+  effects-enabled run; the exact native hang cause remains unproven.
+  Keep player/input/impact classes alive through hard references on the mod
+  driver, including the impact class before its first use.
+
 - Prototype 4c: withdraw the 4b Lua deferred-spawn path after a reported freeze.
   Lua now posts stream requests to transient, nonreplicated fields; an unhooked
   player Blueprint tick creates/releases local actors and EndPlay cleans them up.
